@@ -661,6 +661,13 @@ a {
     flex-direction: column;
   }
 
+  .site-footer {
+  align-items: center;
+  flex-direction: column;
+  padding: 38px 20px;
+  text-align: center;
+}
+
   .footer-logo {
     width: 170px;
     margin: 0 auto;
