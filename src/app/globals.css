@@ -47,31 +47,20 @@ a {
   width: 100%;
   align-items: center;
   justify-content: space-between;
-  padding: 28px clamp(24px, 6vw, 92px);
+  padding: 24px clamp(24px, 6vw, 92px);
 }
 
 .brand {
   display: inline-flex;
   align-items: center;
-  gap: 12px;
 }
 
-.brand-mark {
-  display: grid;
-  width: 42px;
-  height: 42px;
-  place-items: center;
-  border: 1px solid var(--accent);
-  color: var(--accent-light);
-  font-family: var(--font-display), Georgia, serif;
-  font-size: 14px;
-  letter-spacing: 0.08em;
-}
-
-.brand-name {
-  font-family: var(--font-display), Georgia, serif;
-  font-size: 19px;
-  letter-spacing: 0.02em;
+.site-logo {
+  display: block;
+  width: 190px;
+  height: auto;
+  border-radius: 4px;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.22);
 }
 
 .site-nav {
@@ -102,7 +91,7 @@ a {
   align-items: center;
   gap: clamp(48px, 7vw, 120px);
   overflow: hidden;
-  padding: 155px clamp(24px, 8vw, 130px) 100px;
+  padding: 170px clamp(24px, 8vw, 130px) 100px;
   background:
     radial-gradient(
       circle at 76% 33%,
@@ -538,22 +527,26 @@ a {
   font-size: 12px;
 }
 
-.site-footer strong {
-  color: var(--text);
-  font-family: var(--font-display), Georgia, serif;
-  font-size: 20px;
-  font-weight: 500;
+.footer-logo {
+  display: block;
+  width: 190px;
+  height: auto;
+  border-radius: 4px;
 }
 
-.site-footer p {
-  margin: 7px 0 0;
+.footer-brand p {
+  margin-top: 14px;
+}
+
+.site-footer > p {
+  margin: 0;
 }
 
 @media (max-width: 980px) {
   .hero {
     min-height: auto;
     grid-template-columns: 1fr;
-    padding-top: 165px;
+    padding-top: 190px;
   }
 
   .case-file {
@@ -584,8 +577,12 @@ a {
 @media (max-width: 720px) {
   .site-header {
     position: relative;
-    padding: 22px 20px;
+    padding: 18px 20px;
     background: #090c10;
+  }
+
+  .site-logo {
+    width: 175px;
   }
 
   .site-nav {
@@ -654,5 +651,9 @@ a {
     align-items: flex-start;
     flex-direction: column;
     padding: 38px 20px;
+  }
+
+  .footer-logo {
+    width: 170px;
   }
 }

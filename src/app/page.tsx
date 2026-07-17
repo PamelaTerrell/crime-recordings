@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 const RECORDING_TYPES = [
   "Interviews",
   "Interrogations",
@@ -33,11 +35,14 @@ export default function Home() {
     <main>
       <header className="site-header">
         <a className="brand" href="#top" aria-label="Crime Recordings home">
-          <span className="brand-mark" aria-hidden="true">
-            CR
-          </span>
-
-          <span className="brand-name">Crime Recordings</span>
+          <Image
+            src="/crime-recordings-logo.png"
+            alt="Crime Recordings"
+            width={270}
+            height={180}
+            priority
+            className="site-logo"
+          />
         </a>
 
         <nav className="site-nav" aria-label="Primary navigation">
@@ -219,8 +224,15 @@ export default function Home() {
       </section>
 
       <footer className="site-footer">
-        <div>
-          <strong>Crime Recordings</strong>
+        <div className="footer-brand">
+          <Image
+            src="/crime-recordings-logo.png"
+            alt="Crime Recordings"
+            width={240}
+            height={160}
+            className="footer-logo"
+          />
+
           <p>Real cases. Original recordings.</p>
         </div>
 
