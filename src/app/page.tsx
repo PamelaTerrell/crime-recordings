@@ -219,8 +219,9 @@ export default function Home() {
           </p>
 
           <p className="launch-note">
-            CrimeRecordings.com · Established 2026
+            CrimeRecordings.com · Established 2026 
           </p>
+          
         </div>
       </section>
 
@@ -237,7 +238,7 @@ export default function Home() {
           <p>Real cases. Original recordings.</p>
         </div>
 
-        <p>© {new Date().getFullYear()} Crime Recordings</p>
+        <p>© {new Date().getFullYear()} Crime Recordings - A Stabile USA Project</p>
       </footer>
     </main>
   );
