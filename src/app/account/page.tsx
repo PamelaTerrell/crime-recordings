@@ -87,16 +87,22 @@ export default async function AccountPage() {
         </p>
 
         <div className="account-actions">
-          <Link href="/" className="secondary-button">
-            Return home
-          </Link>
+  {(role?.role === "admin" || role?.role === "editor") && (
+    <Link href="/admin" className="admin-primary-link">
+      Open admin dashboard
+    </Link>
+  )}
 
-          <form action={signOut}>
-            <button className="account-signout" type="submit">
-              Sign out
-            </button>
-          </form>
-        </div>
+  <Link href="/" className="secondary-button">
+    Return home
+  </Link>
+
+  <form action={signOut}>
+    <button className="account-signout" type="submit">
+      Sign out
+    </button>
+  </form>
+</div>
       </section>
     </main>
   );
