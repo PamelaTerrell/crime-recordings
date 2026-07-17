@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Cormorant_Garamond, Inter } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
 const inter = Inter({
@@ -16,12 +17,15 @@ const cormorant = Cormorant_Garamond({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://crimerecordings.com"),
+
   title: {
     default: "Crime Recordings | Real Cases. Original Recordings.",
     template: "%s | Crime Recordings",
   },
+
   description:
     "Crime Recordings presents interviews, interrogations, emergency calls, dispatch audio, and other official recordings obtained through public-records requests.",
+
   keywords: [
     "crime recordings",
     "true crime audio",
@@ -32,16 +36,20 @@ export const metadata: Metadata = {
     "dispatch recordings",
     "official case recordings",
   ],
+
   authors: [
     {
       name: "Crime Recordings",
     },
   ],
+
   creator: "Crime Recordings",
   publisher: "Crime Recordings",
+
   alternates: {
     canonical: "/",
   },
+
   openGraph: {
     type: "website",
     url: "https://crimerecordings.com",
@@ -50,12 +58,14 @@ export const metadata: Metadata = {
     description:
       "Hear the interviews, calls, and official records behind true-crime cases.",
   },
+
   twitter: {
     card: "summary_large_image",
     title: "Crime Recordings | Real Cases. Original Recordings.",
     description:
       "Hear the interviews, calls, and official records behind true-crime cases.",
   },
+
   robots: {
     index: true,
     follow: true,
@@ -71,6 +81,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${inter.variable} ${cormorant.variable}`}>
         {children}
+        <Analytics />
       </body>
     </html>
   );
