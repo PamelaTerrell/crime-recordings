@@ -577,12 +577,19 @@ a {
 @media (max-width: 720px) {
   .site-header {
     position: relative;
+    justify-content: center;
     padding: 18px 20px;
     background: #090c10;
   }
 
+  .brand {
+    width: 100%;
+    justify-content: center;
+  }
+
   .site-logo {
     width: 175px;
+    margin: 0 auto;
   }
 
   .site-nav {
@@ -647,13 +654,20 @@ a {
     margin-top: 45px;
   }
 
-  .site-footer {
-    align-items: flex-start;
+  .footer-brand {
+    display: flex;
+    width: 100%;
+    align-items: center;
     flex-direction: column;
-    padding: 38px 20px;
   }
 
   .footer-logo {
     width: 170px;
+    margin: 0 auto;
+  }
+
+  .site-footer > p {
+    width: 100%;
+    text-align: center;
   }
 }
