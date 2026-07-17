@@ -49,6 +49,7 @@ export default function Home() {
           <a href="#about">About</a>
           <a href="#archive">The Archive</a>
           <a href="#coming-soon">Updates</a>
+          <a href="/login">Sign In</a>
         </nav>
       </header>
 
