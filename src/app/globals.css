@@ -947,6 +947,46 @@ a {
   border: 1px solid rgba(200, 166, 106, 0.35);
 }
 
+.admin-case-heading-actions {
+  display: flex;
+  align-items: flex-end;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.admin-field select {
+  width: 100%;
+  min-height: 54px;
+  padding: 0 16px;
+  border: 1px solid var(--border);
+  border-radius: 0;
+  outline: none;
+  background: #080b0f;
+  color: var(--text);
+  font: inherit;
+  line-height: 1.6;
+}
+
+.admin-field select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(200, 166, 106, 0.1);
+}
+
+.admin-case-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 16px;
+}
+
+.admin-case-row-actions a {
+  color: var(--accent-light);
+}
+
+.admin-case-row-actions a:hover {
+  color: var(--text);
+}
+
 @media (max-width: 980px) {
   .hero {
     min-height: auto;
@@ -1023,6 +1063,19 @@ a {
 
 .admin-form-actions {
   justify-content: stretch;
+}
+
+.admin-case-heading-actions {
+  width: 100%;
+  align-items: stretch;
+}
+
+.admin-case-heading-actions .admin-status {
+  align-self: center;
+}
+
+.admin-case-row-actions {
+  justify-content: flex-start;
 }
 }
 

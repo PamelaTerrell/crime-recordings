@@ -14,7 +14,23 @@ export default async function AdminCasePage({
   const { data: caseItem, error } = await supabase
     .from("cases")
     .select(
-      "id, title, subtitle, slug, summary, description, case_status, location_city, location_state, location_country, incident_date, content_warning, is_featured, created_at, updated_at",
+      `
+        id,
+        title,
+        subtitle,
+        slug,
+        summary,
+        description,
+        case_status,
+        location_city,
+        location_state,
+        location_country,
+        incident_date,
+        content_warning,
+        is_featured,
+        created_at,
+        updated_at
+      `,
     )
     .eq("id", id)
     .maybeSingle();
@@ -40,9 +56,18 @@ export default async function AdminCasePage({
           {caseItem.subtitle && <p>{caseItem.subtitle}</p>}
         </div>
 
-        <span className="admin-status">
-          {caseItem.case_status}
-        </span>
+        <div className="admin-case-heading-actions">
+          <span className="admin-status">
+            {caseItem.case_status}
+          </span>
+
+          <Link
+            href={`/admin/cases/${caseItem.id}/edit`}
+            className="admin-primary-link"
+          >
+            Edit case
+          </Link>
+        </div>
       </div>
 
       <div className="admin-detail-grid">
@@ -53,6 +78,7 @@ export default async function AdminCasePage({
 
         <article className="admin-detail-card">
           <span>Location</span>
+
           <strong>
             {[
               caseItem.location_city,
@@ -66,14 +92,46 @@ export default async function AdminCasePage({
 
         <article className="admin-detail-card">
           <span>Incident date</span>
+
           <strong>
-            {caseItem.incident_date ?? "Not entered"}
+            {caseItem.incident_date
+              ? new Intl.DateTimeFormat("en-US", {
+                  month: "long",
+                  day: "numeric",
+                  year: "numeric",
+                  timeZone: "UTC",
+                }).format(new Date(`${caseItem.incident_date}T00:00:00Z`))
+              : "Not entered"}
           </strong>
         </article>
 
         <article className="admin-detail-card">
           <span>Featured</span>
           <strong>{caseItem.is_featured ? "Yes" : "No"}</strong>
+        </article>
+
+        <article className="admin-detail-card">
+          <span>Created</span>
+
+          <strong>
+            {new Intl.DateTimeFormat("en-US", {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            }).format(new Date(caseItem.created_at))}
+          </strong>
+        </article>
+
+        <article className="admin-detail-card">
+          <span>Last updated</span>
+
+          <strong>
+            {new Intl.DateTimeFormat("en-US", {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            }).format(new Date(caseItem.updated_at))}
+          </strong>
         </article>
       </div>
 
@@ -102,10 +160,13 @@ export default async function AdminCasePage({
 
       <div className="admin-coming-next">
         <p className="admin-eyebrow">Next stage</p>
-        <h2>Case editing and source management</h2>
+
+        <h2>Source and recording management</h2>
+
         <p>
-          The next admin tools will allow this draft to be edited and linked
-          to source agencies and recordings.
+          This case can now be edited. The next admin tools will connect it
+          to source agencies, public-record documents, recordings, transcripts,
+          and chapter markers.
         </p>
       </div>
     </section>

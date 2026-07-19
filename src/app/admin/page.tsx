@@ -7,7 +7,15 @@ export default async function AdminPage() {
   const { data: cases, error } = await supabase
     .from("cases")
     .select(
-      "id, title, slug, case_status, is_featured, updated_at, published_at",
+      `
+        id,
+        title,
+        slug,
+        case_status,
+        is_featured,
+        updated_at,
+        published_at
+      `,
     )
     .order("updated_at", { ascending: false });
 
@@ -16,7 +24,9 @@ export default async function AdminPage() {
       <div className="admin-page-heading">
         <div>
           <p className="admin-eyebrow">Editorial dashboard</p>
+
           <h1>Case archive</h1>
+
           <p>
             Create, organize, review, and eventually publish the cases in the
             Crime Recordings archive.
@@ -30,8 +40,8 @@ export default async function AdminPage() {
       </div>
 
       {error ? (
-        <div className="admin-alert admin-alert-error">
-          The case list could not be loaded.
+        <div className="admin-alert admin-alert-error" role="alert">
+          The case list could not be loaded: {error.message}
         </div>
       ) : cases && cases.length > 0 ? (
         <div className="admin-case-list">
@@ -59,9 +69,15 @@ export default async function AdminPage() {
                   }).format(new Date(caseItem.updated_at))}
                 </time>
 
-                <Link href={`/admin/cases/${caseItem.id}`}>
-                  Open case →
-                </Link>
+                <div className="admin-case-row-actions">
+                  <Link href={`/admin/cases/${caseItem.id}`}>
+                    Open case →
+                  </Link>
+
+                  <Link href={`/admin/cases/${caseItem.id}/edit`}>
+                    Edit case →
+                  </Link>
+                </div>
               </div>
             </article>
           ))}
@@ -69,7 +85,9 @@ export default async function AdminPage() {
       ) : (
         <div className="admin-empty-state">
           <p className="admin-eyebrow">No cases yet</p>
+
           <h2>Create the first Crime Recordings case.</h2>
+
           <p>
             It will be saved privately as a draft and will not appear on the
             public website.

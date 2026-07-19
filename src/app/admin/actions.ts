@@ -8,64 +8,100 @@ export type CaseFormState = {
   error?: string;
 };
 
-function cleanOptionalText(value: FormDataEntryValue | null) {
+const allowedStatuses = [
+  "draft",
+  "review",
+  "scheduled",
+  "published",
+  "archived",
+] as const;
+
+type CaseStatus = (typeof allowedStatuses)[number];
+
+function getRequiredString(formData: FormData, field: string) {
+  const value = formData.get(field);
+
+  if (typeof value !== "string" || !value.trim()) {
+    return null;
+  }
+
+  return value.trim();
+}
+
+function getOptionalString(formData: FormData, field: string) {
+  const value = formData.get(field);
+
   if (typeof value !== "string") {
     return null;
   }
 
-  const cleaned = value.trim();
-  return cleaned.length > 0 ? cleaned : null;
+  const trimmedValue = value.trim();
+
+  return trimmedValue.length > 0 ? trimmedValue : null;
 }
 
 function createSlug(value: string) {
   return value
-    .trim()
     .toLowerCase()
+    .trim()
     .replace(/['’]/g, "")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
+}
+
+async function requireEditorialAccess() {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    redirect("/login");
+  }
+
+  const { data: roleRecord, error: roleError } = await supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (roleError) {
+    throw new Error(`Unable to verify account role: ${roleError.message}`);
+  }
+
+  if (
+    roleRecord?.role !== "admin" &&
+    roleRecord?.role !== "editor"
+  ) {
+    redirect("/account");
+  }
+
+  return {
+    supabase,
+    user,
+  };
 }
 
 export async function createCase(
   _previousState: CaseFormState,
   formData: FormData,
 ): Promise<CaseFormState> {
-  const supabase = await createClient();
+  const { supabase, user } = await requireEditorialAccess();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/login");
-  }
-
-  const { data: roleRecord } = await supabase
-    .from("user_roles")
-    .select("role")
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  const role = roleRecord?.role;
-
-  if (role !== "admin" && role !== "editor") {
-    return {
-      error: "You do not have permission to create cases.",
-    };
-  }
-
-  const titleValue = formData.get("title");
-  const slugValue = formData.get("slug");
-  const incidentDateValue = formData.get("incident_date");
-  const featuredValue = formData.get("is_featured");
-
-  const title =
-    typeof titleValue === "string" ? titleValue.trim() : "";
-
-  const requestedSlug =
-    typeof slugValue === "string" ? slugValue.trim() : "";
-
-  const slug = createSlug(requestedSlug || title);
+  const title = getRequiredString(formData, "title");
+  const subtitle = getOptionalString(formData, "subtitle");
+  const requestedSlug = getOptionalString(formData, "slug");
+  const summary = getOptionalString(formData, "summary");
+  const description = getOptionalString(formData, "description");
+  const contentWarning = getOptionalString(formData, "content_warning");
+  const locationCity = getOptionalString(formData, "location_city");
+  const locationState = getOptionalString(formData, "location_state");
+  const locationCountry =
+    getOptionalString(formData, "location_country") ?? "United States";
+  const incidentDate = getOptionalString(formData, "incident_date");
+  const featured = formData.get("featured") === "on";
 
   if (!title) {
     return {
@@ -73,60 +109,155 @@ export async function createCase(
     };
   }
 
+  const slug = createSlug(requestedSlug ?? title);
+
   if (!slug) {
     return {
-      error: "Please enter a valid title or slug.",
+      error: "Please enter a title or slug containing letters or numbers.",
     };
   }
 
-  const incidentDate =
-    typeof incidentDateValue === "string" &&
-    incidentDateValue.trim().length > 0
-      ? incidentDateValue
-      : null;
+  const { data: existingCase } = await supabase
+    .from("cases")
+    .select("id")
+    .eq("slug", slug)
+    .maybeSingle();
 
-  const { data: createdCase, error } = await supabase
+  if (existingCase) {
+    return {
+      error: "That case slug is already in use. Please choose another one.",
+    };
+  }
+
+  const { data: createdCase, error: insertError } = await supabase
     .from("cases")
     .insert({
       title,
+      subtitle,
       slug,
-      subtitle: cleanOptionalText(formData.get("subtitle")),
-      summary: cleanOptionalText(formData.get("summary")),
-      description: cleanOptionalText(formData.get("description")),
-      location_city: cleanOptionalText(formData.get("location_city")),
-      location_state: cleanOptionalText(formData.get("location_state")),
-      location_country:
-        cleanOptionalText(formData.get("location_country")) ??
-        "United States",
+      summary,
+      description,
+      content_warning: contentWarning,
+      location_city: locationCity,
+      location_state: locationState,
+      location_country: locationCountry,
       incident_date: incidentDate,
-      content_warning: cleanOptionalText(
-        formData.get("content_warning"),
-      ),
-      case_status: "draft",
-      is_featured: featuredValue === "on",
+      featured,
+      status: "draft",
       created_by: user.id,
       updated_by: user.id,
     })
     .select("id")
     .single();
 
-  if (error) {
-    console.error("Unable to create case:", error);
-
-    if (error.code === "23505") {
-      return {
-        error:
-          "That slug is already being used. Please choose a different one.",
-      };
-    }
-
+  if (insertError || !createdCase) {
     return {
       error:
-        "The case could not be saved. Please review the information and try again.",
+        insertError?.message ??
+        "The case could not be created. Please try again.",
     };
   }
 
   revalidatePath("/admin");
-
   redirect(`/admin/cases/${createdCase.id}`);
+}
+
+export async function updateCase(
+  caseId: string,
+  _previousState: CaseFormState,
+  formData: FormData,
+): Promise<CaseFormState> {
+  const { supabase, user } = await requireEditorialAccess();
+
+  const title = getRequiredString(formData, "title");
+  const subtitle = getOptionalString(formData, "subtitle");
+  const requestedSlug = getOptionalString(formData, "slug");
+  const summary = getOptionalString(formData, "summary");
+  const description = getOptionalString(formData, "description");
+  const contentWarning = getOptionalString(formData, "content_warning");
+  const locationCity = getOptionalString(formData, "location_city");
+  const locationState = getOptionalString(formData, "location_state");
+  const locationCountry =
+    getOptionalString(formData, "location_country") ?? "United States";
+  const incidentDate = getOptionalString(formData, "incident_date");
+  const featured = formData.get("featured") === "on";
+  const statusValue = getRequiredString(formData, "status");
+
+  if (!title) {
+    return {
+      error: "Please enter a case title.",
+    };
+  }
+
+  if (
+    !statusValue ||
+    !allowedStatuses.includes(statusValue as CaseStatus)
+  ) {
+    return {
+      error: "Please select a valid case status.",
+    };
+  }
+
+  const slug = createSlug(requestedSlug ?? title);
+
+  if (!slug) {
+    return {
+      error: "Please enter a title or slug containing letters or numbers.",
+    };
+  }
+
+  const { data: duplicateCase, error: duplicateError } = await supabase
+    .from("cases")
+    .select("id")
+    .eq("slug", slug)
+    .neq("id", caseId)
+    .maybeSingle();
+
+  if (duplicateError) {
+    return {
+      error: duplicateError.message,
+    };
+  }
+
+  if (duplicateCase) {
+    return {
+      error: "That case slug is already in use. Please choose another one.",
+    };
+  }
+
+  const publishedAt =
+    statusValue === "published" ? new Date().toISOString() : null;
+
+  const { error: updateError } = await supabase
+    .from("cases")
+    .update({
+      title,
+      subtitle,
+      slug,
+      summary,
+      description,
+      content_warning: contentWarning,
+      location_city: locationCity,
+      location_state: locationState,
+      location_country: locationCountry,
+      incident_date: incidentDate,
+      featured,
+      status: statusValue,
+      published_at: publishedAt,
+      updated_by: user.id,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", caseId);
+
+  if (updateError) {
+    return {
+      error: updateError.message,
+    };
+  }
+
+  revalidatePath("/admin");
+  revalidatePath(`/admin/cases/${caseId}`);
+  revalidatePath(`/admin/cases/${caseId}/edit`);
+
+  redirect(`/admin/cases/${caseId}`);
 }
