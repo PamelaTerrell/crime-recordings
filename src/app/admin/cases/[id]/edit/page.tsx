@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import EditCaseForm from "./edit-case-form";
 
+
 type EditCasePageProps = {
   params: Promise<{
     id: string;

@@ -8,7 +8,6 @@ export default async function AdminCasePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-
   const supabase = await createClient();
 
   const { data: caseItem, error } = await supabase
@@ -78,7 +77,6 @@ export default async function AdminCasePage({
 
         <article className="admin-detail-card">
           <span>Location</span>
-
           <strong>
             {[
               caseItem.location_city,
@@ -92,46 +90,12 @@ export default async function AdminCasePage({
 
         <article className="admin-detail-card">
           <span>Incident date</span>
-
-          <strong>
-            {caseItem.incident_date
-              ? new Intl.DateTimeFormat("en-US", {
-                  month: "long",
-                  day: "numeric",
-                  year: "numeric",
-                  timeZone: "UTC",
-                }).format(new Date(`${caseItem.incident_date}T00:00:00Z`))
-              : "Not entered"}
-          </strong>
+          <strong>{caseItem.incident_date ?? "Not entered"}</strong>
         </article>
 
         <article className="admin-detail-card">
           <span>Featured</span>
           <strong>{caseItem.is_featured ? "Yes" : "No"}</strong>
-        </article>
-
-        <article className="admin-detail-card">
-          <span>Created</span>
-
-          <strong>
-            {new Intl.DateTimeFormat("en-US", {
-              month: "short",
-              day: "numeric",
-              year: "numeric",
-            }).format(new Date(caseItem.created_at))}
-          </strong>
-        </article>
-
-        <article className="admin-detail-card">
-          <span>Last updated</span>
-
-          <strong>
-            {new Intl.DateTimeFormat("en-US", {
-              month: "short",
-              day: "numeric",
-              year: "numeric",
-            }).format(new Date(caseItem.updated_at))}
-          </strong>
         </article>
       </div>
 
