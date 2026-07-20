@@ -101,7 +101,14 @@ export async function createCase(
   const locationCountry =
     getOptionalString(formData, "location_country") ?? "United States";
   const incidentDate = getOptionalString(formData, "incident_date");
-  const featured = formData.get("featured") === "on";
+
+  /*
+   * Your existing new-case form may still use name="featured".
+   * This accepts either version so the create form keeps working.
+   */
+  const isFeatured =
+    formData.get("is_featured") === "on" ||
+    formData.get("featured") === "on";
 
   if (!title) {
     return {
@@ -117,11 +124,17 @@ export async function createCase(
     };
   }
 
-  const { data: existingCase } = await supabase
+  const { data: existingCase, error: existingCaseError } = await supabase
     .from("cases")
     .select("id")
     .eq("slug", slug)
     .maybeSingle();
+
+  if (existingCaseError) {
+    return {
+      error: existingCaseError.message,
+    };
+  }
 
   if (existingCase) {
     return {
@@ -142,8 +155,8 @@ export async function createCase(
       location_state: locationState,
       location_country: locationCountry,
       incident_date: incidentDate,
-      featured,
-      status: "draft",
+      is_featured: isFeatured,
+      case_status: "draft",
       created_by: user.id,
       updated_by: user.id,
     })
@@ -159,6 +172,7 @@ export async function createCase(
   }
 
   revalidatePath("/admin");
+
   redirect(`/admin/cases/${createdCase.id}`);
 }
 
@@ -180,8 +194,8 @@ export async function updateCase(
   const locationCountry =
     getOptionalString(formData, "location_country") ?? "United States";
   const incidentDate = getOptionalString(formData, "incident_date");
-  const featured = formData.get("featured") === "on";
-  const statusValue = getRequiredString(formData, "status");
+  const isFeatured = formData.get("is_featured") === "on";
+  const caseStatus = getRequiredString(formData, "case_status");
 
   if (!title) {
     return {
@@ -190,8 +204,8 @@ export async function updateCase(
   }
 
   if (
-    !statusValue ||
-    !allowedStatuses.includes(statusValue as CaseStatus)
+    !caseStatus ||
+    !allowedStatuses.includes(caseStatus as CaseStatus)
   ) {
     return {
       error: "Please select a valid case status.",
@@ -225,8 +239,28 @@ export async function updateCase(
     };
   }
 
+  const { data: currentCase, error: currentCaseError } = await supabase
+    .from("cases")
+    .select("published_at")
+    .eq("id", caseId)
+    .maybeSingle();
+
+  if (currentCaseError) {
+    return {
+      error: currentCaseError.message,
+    };
+  }
+
+  if (!currentCase) {
+    return {
+      error: "The case could not be found.",
+    };
+  }
+
   const publishedAt =
-    statusValue === "published" ? new Date().toISOString() : null;
+    caseStatus === "published"
+      ? currentCase.published_at ?? new Date().toISOString()
+      : null;
 
   const { error: updateError } = await supabase
     .from("cases")
@@ -241,8 +275,8 @@ export async function updateCase(
       location_state: locationState,
       location_country: locationCountry,
       incident_date: incidentDate,
-      featured,
-      status: statusValue,
+      is_featured: isFeatured,
+      case_status: caseStatus,
       published_at: publishedAt,
       updated_by: user.id,
       updated_at: new Date().toISOString(),
