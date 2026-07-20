@@ -4,7 +4,8 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { r2BucketName, r2Client } from "@/lib/r2";
 
-const allowedAudioTypes = new Set([
+const allowedMediaTypes = new Set([
+  // Audio
   "audio/mpeg",
   "audio/mp3",
   "audio/mp4",
@@ -16,6 +17,12 @@ const allowedAudioTypes = new Set([
   "audio/ogg",
   "audio/flac",
   "audio/x-flac",
+
+  // Video
+  "video/mp4",
+  "video/quicktime",
+  "video/webm",
+  "video/x-m4v",
 ]);
 
 function sanitizeFilename(filename: string) {
@@ -100,15 +107,15 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!allowedAudioTypes.has(contentType)) {
-      return NextResponse.json(
-        {
-          error:
-            "Please select a supported audio file such as MP3, M4A, WAV, AAC, OGG, or FLAC.",
-        },
-        { status: 400 },
-      );
-    }
+    if (!allowedMediaTypes.has(contentType)) {
+  return NextResponse.json(
+    {
+      error:
+        "Please select a supported audio or video file such as MP3, M4A, WAV, MP4, MOV, M4V, or WebM.",
+    },
+    { status: 400 },
+  );
+}
 
     const { data: caseRecord, error: caseError } = await supabase
       .from("cases")

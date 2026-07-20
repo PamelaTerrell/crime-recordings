@@ -50,6 +50,7 @@ export default async function AdminCasePage({
         title,
         recording_type,
         original_filename,
+        mime_type,
         file_size_bytes,
         access_level,
         is_published,
@@ -106,7 +107,7 @@ export default async function AdminCasePage({
             href={`/admin/cases/${caseItem.id}/recordings/new`}
             className="admin-primary-link"
           >
-            Add audio
+            Add media
           </Link>
 
           <Link
@@ -187,15 +188,15 @@ export default async function AdminCasePage({
       <section className="mt-9">
         <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
-            <p className="admin-eyebrow">Case audio</p>
+            <p className="admin-eyebrow">Case media</p>
 
             <h2 className="m-0 font-serif text-4xl font-medium text-[#f4f1e9] md:text-5xl">
-              Recordings
+              Audio and video
             </h2>
 
             <p className="mt-4 max-w-2xl leading-7 text-[#a8adb5]">
-              Audio files remain private in Cloudflare R2. Load the
-              secure player to review each recording.
+              Audio and video files remain private in Cloudflare R2.
+              Load the secure player to review each recording.
             </p>
           </div>
 
@@ -203,7 +204,7 @@ export default async function AdminCasePage({
             href={`/admin/cases/${caseItem.id}/recordings/new`}
             className="admin-primary-link"
           >
-            Add audio
+            Add media
           </Link>
         </div>
 
@@ -216,6 +217,7 @@ export default async function AdminCasePage({
                 title={recording.title}
                 recordingType={recording.recording_type}
                 originalFilename={recording.original_filename}
+                mimeType={recording.mime_type}
                 fileSizeBytes={recording.file_size_bytes}
                 accessLevel={recording.access_level}
                 isPublished={recording.is_published}
@@ -226,7 +228,7 @@ export default async function AdminCasePage({
         ) : (
           <div className="border border-white/10 bg-[#10151b] p-7">
             <p className="m-0 text-[#a8adb5]">
-              No audio has been added to this case yet.
+              No audio or video has been added to this case yet.
             </p>
           </div>
         )}
@@ -238,9 +240,10 @@ export default async function AdminCasePage({
         <h2>Build out the case archive</h2>
 
         <p>
-          This case now supports secure audio uploads and private
-          administrative playback. Future tools can add recording
-          editing, transcripts, chapters, source agencies, and
+          This case now supports secure audio and video uploads,
+          private administrative playback, recording editing,
+          publishing controls, sorting, and deletion. Future tools
+          can add transcripts, chapter markers, source agencies, and
           member-facing playback.
         </p>
       </div>

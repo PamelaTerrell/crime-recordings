@@ -30,14 +30,16 @@ const MAX_SINGLE_UPLOAD_BYTES = 5 * 1024 * 1024 * 1024;
 const recordingTypes = [
   { value: "911-call", label: "911 call" },
   { value: "interrogation", label: "Interrogation" },
-  { value: "dispatch", label: "Dispatch audio" },
-  { value: "court-audio", label: "Court audio" },
+  { value: "dispatch", label: "Dispatch recording" },
+  { value: "court-audio", label: "Court recording" },
   { value: "interview", label: "Interview" },
-  { value: "body-camera", label: "Body-camera audio" },
+  { value: "body-camera", label: "Body-camera recording" },
+  { value: "surveillance", label: "Surveillance video" },
+  { value: "news-footage", label: "News footage" },
   { value: "other", label: "Other" },
 ];
 
-function detectAudioType(file: File) {
+function detectMediaType(file: File) {
   if (file.type) {
     return file.type.toLowerCase();
   }
@@ -50,11 +52,14 @@ function detectAudioType(file: File) {
   const mimeTypes: Record<string, string> = {
     mp3: "audio/mpeg",
     m4a: "audio/x-m4a",
-    mp4: "audio/mp4",
     wav: "audio/wav",
     aac: "audio/aac",
     ogg: "audio/ogg",
     flac: "audio/flac",
+    mp4: "video/mp4",
+    mov: "video/quicktime",
+    webm: "video/webm",
+    m4v: "video/x-m4v",
   };
 
   return extension ? mimeTypes[extension] ?? "" : "";
@@ -82,7 +87,6 @@ function uploadFileToR2(
     const request = new XMLHttpRequest();
 
     request.open("PUT", uploadUrl);
-
     request.setRequestHeader("Content-Type", contentType);
 
     request.upload.addEventListener("progress", (event) => {
@@ -134,11 +138,11 @@ export default function AudioUploadForm({
 
   const [title, setTitle] = useState("");
   const [recordingType, setRecordingType] =
-    useState("911-call");
+    useState("interview");
   const [accessLevel, setAccessLevel] =
     useState<"public" | "member">("member");
   const [isPublished, setIsPublished] = useState(false);
-  const [audioFile, setAudioFile] = useState<File | null>(
+  const [mediaFile, setMediaFile] = useState<File | null>(
     null,
   );
   const [pending, setPending] = useState(false);
@@ -147,12 +151,12 @@ export default function AudioUploadForm({
   const [error, setError] = useState("");
 
   const fileDescription = useMemo(() => {
-    if (!audioFile) {
+    if (!mediaFile) {
       return "";
     }
 
-    return `${audioFile.name} · ${formatFileSize(audioFile.size)}`;
-  }, [audioFile]);
+    return `${mediaFile.name} · ${formatFileSize(mediaFile.size)}`;
+  }, [mediaFile]);
 
   function handleFileChange(
     event: ChangeEvent<HTMLInputElement>,
@@ -163,12 +167,12 @@ export default function AudioUploadForm({
     setUploadProgress(0);
 
     if (!selectedFile) {
-      setAudioFile(null);
+      setMediaFile(null);
       return;
     }
 
     if (selectedFile.size > MAX_SINGLE_UPLOAD_BYTES) {
-      setAudioFile(null);
+      setMediaFile(null);
       event.target.value = "";
 
       setError(
@@ -178,20 +182,20 @@ export default function AudioUploadForm({
       return;
     }
 
-    const contentType = detectAudioType(selectedFile);
+    const contentType = detectMediaType(selectedFile);
 
     if (!contentType) {
-      setAudioFile(null);
+      setMediaFile(null);
       event.target.value = "";
 
       setError(
-        "Please choose an MP3, M4A, MP4 audio, WAV, AAC, OGG, or FLAC file.",
+        "Please choose an MP3, M4A, WAV, AAC, OGG, FLAC, MP4, MOV, M4V, or WebM file.",
       );
 
       return;
     }
 
-    setAudioFile(selectedFile);
+    setMediaFile(selectedFile);
 
     if (!title.trim()) {
       const filenameWithoutExtension = selectedFile.name.replace(
@@ -203,7 +207,9 @@ export default function AudioUploadForm({
     }
   }
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(
+    event: FormEvent<HTMLFormElement>,
+  ) {
     event.preventDefault();
 
     setError("");
@@ -215,12 +221,12 @@ export default function AudioUploadForm({
       return;
     }
 
-    if (!audioFile) {
-      setError("Please select an audio file.");
+    if (!mediaFile) {
+      setError("Please select an audio or video file.");
       return;
     }
 
-    const contentType = detectAudioType(audioFile);
+    const contentType = detectMediaType(mediaFile);
 
     if (!contentType) {
       setError("The selected file type is not supported.");
@@ -241,7 +247,7 @@ export default function AudioUploadForm({
           },
           body: JSON.stringify({
             caseId,
-            filename: audioFile.name,
+            filename: mediaFile.name,
             contentType,
           }),
         },
@@ -261,11 +267,13 @@ export default function AudioUploadForm({
         );
       }
 
-      setStatusMessage("Uploading audio to Cloudflare R2…");
+      setStatusMessage(
+        "Uploading media to Cloudflare R2…",
+      );
 
       await uploadFileToR2(
         uploadUrlData.uploadUrl,
-        audioFile,
+        mediaFile,
         contentType,
         setUploadProgress,
       );
@@ -284,9 +292,9 @@ export default function AudioUploadForm({
           accessLevel,
           isPublished,
           objectKey: uploadUrlData.objectKey,
-          originalFilename: audioFile.name,
+          originalFilename: mediaFile.name,
           mimeType: contentType,
-          fileSizeBytes: audioFile.size,
+          fileSizeBytes: mediaFile.size,
         }),
       });
 
@@ -318,10 +326,7 @@ export default function AudioUploadForm({
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="grid gap-6"
-    >
+    <form onSubmit={handleSubmit} className="grid gap-6">
       {error ? (
         <div
           role="alert"
@@ -338,7 +343,7 @@ export default function AudioUploadForm({
           </p>
 
           <h2 className="font-serif text-3xl font-medium text-[#f4f1e9] md:text-4xl">
-            Identify the audio
+            Identify the recording
           </h2>
         </div>
 
@@ -351,9 +356,11 @@ export default function AudioUploadForm({
             <input
               type="text"
               value={title}
-              onChange={(event) => setTitle(event.target.value)}
+              onChange={(event) =>
+                setTitle(event.target.value)
+              }
               disabled={pending}
-              placeholder="Example: 911 Call — Initial Report"
+              placeholder="Example: Police Interview — Part One"
               className="min-h-14 w-full border border-white/10 bg-[#080b0f] px-4 text-[#f4f1e9] outline-none transition focus:border-[#c8a66a] focus:ring-4 focus:ring-[#c8a66a]/10"
               required
             />
@@ -392,7 +399,9 @@ export default function AudioUploadForm({
               value={accessLevel}
               onChange={(event) =>
                 setAccessLevel(
-                  event.target.value as "public" | "member",
+                  event.target.value as
+                    | "public"
+                    | "member",
                 )
               }
               disabled={pending}
@@ -408,27 +417,28 @@ export default function AudioUploadForm({
       <section className="border border-white/10 bg-[#10151b] p-6 md:p-10">
         <div className="mb-8">
           <p className="mb-3 text-xs font-extrabold uppercase tracking-[0.18em] text-[#e1c58f]">
-            Audio file
+            Media file
           </p>
 
           <h2 className="font-serif text-3xl font-medium text-[#f4f1e9] md:text-4xl">
-            Select the recording
+            Select the audio or video
           </h2>
 
           <p className="mt-4 max-w-2xl leading-7 text-[#a8adb5]">
-            The file uploads directly to the private Cloudflare
-            bucket. Keep this page open until the upload finishes.
+            The audio or video file uploads directly to the
+            private Cloudflare bucket. Keep this page open until
+            the upload finishes.
           </p>
         </div>
 
         <label className="grid cursor-pointer gap-3 border border-dashed border-[#c8a66a]/50 bg-[#080b0f] p-6 transition hover:border-[#c8a66a] md:p-10">
           <span className="text-sm font-bold uppercase tracking-[0.1em] text-[#e1c58f]">
-            Choose audio file
+            Choose audio or video file
           </span>
 
           <input
             type="file"
-            accept=".mp3,.m4a,.mp4,.wav,.aac,.ogg,.flac,audio/*"
+            accept=".mp3,.m4a,.wav,.aac,.ogg,.flac,.mp4,.mov,.m4v,.webm,audio/*,video/*"
             onChange={handleFileChange}
             disabled={pending}
             className="block w-full text-sm text-[#a8adb5] file:mr-4 file:border file:border-[#c8a66a] file:bg-[#c8a66a] file:px-5 file:py-3 file:text-xs file:font-extrabold file:uppercase file:tracking-[0.08em] file:text-[#111318]"
@@ -497,7 +507,7 @@ export default function AudioUploadForm({
           className="inline-flex min-h-14 w-full items-center justify-center border border-[#c8a66a] bg-[#c8a66a] px-7 text-xs font-extrabold uppercase tracking-[0.09em] text-[#111318] transition hover:bg-[#e1c58f] disabled:cursor-wait disabled:opacity-60 md:w-auto"
         >
           {pending
-            ? "Uploading recording…"
+            ? "Uploading media…"
             : "Upload recording"}
         </button>
       </div>

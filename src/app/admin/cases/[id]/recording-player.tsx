@@ -8,6 +8,7 @@ type RecordingPlayerProps = {
   title: string;
   recordingType: string;
   originalFilename: string | null;
+  mimeType: string | null;
   fileSizeBytes: number | null;
   accessLevel: string;
   isPublished: boolean;
@@ -24,10 +25,12 @@ type ApiResponse = {
 const recordingTypes = [
   { value: "911-call", label: "911 call" },
   { value: "interrogation", label: "Interrogation" },
-  { value: "dispatch", label: "Dispatch audio" },
-  { value: "court-audio", label: "Court audio" },
+  { value: "dispatch", label: "Dispatch recording" },
+  { value: "court-audio", label: "Court recording" },
   { value: "interview", label: "Interview" },
-  { value: "body-camera", label: "Body-camera audio" },
+  { value: "body-camera", label: "Body-camera recording" },
+  { value: "surveillance", label: "Surveillance video" },
+  { value: "news-footage", label: "News footage" },
   { value: "other", label: "Other" },
 ];
 
@@ -78,6 +81,7 @@ export default function RecordingPlayer({
   title,
   recordingType,
   originalFilename,
+  mimeType,
   fileSizeBytes,
   accessLevel,
   isPublished,
@@ -108,6 +112,10 @@ export default function RecordingPlayer({
   >(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+
+  const formattedSize = formatFileSize(fileSizeBytes);
+  const canDelete = confirmationText.trim() === title.trim();
+  const isVideo = mimeType?.startsWith("video/") ?? false;
 
   async function preparePlayback() {
     setPendingAction("playback");
@@ -234,9 +242,6 @@ export default function RecordingPlayer({
     }
   }
 
-  const formattedSize = formatFileSize(fileSizeBytes);
-  const canDelete = confirmationText.trim() === title.trim();
-
   return (
     <article className="border border-white/10 bg-[#10151b] p-6 md:p-8">
       <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
@@ -244,6 +249,10 @@ export default function RecordingPlayer({
           <div className="mb-3 flex flex-wrap gap-2">
             <span className="border border-[#c8a66a]/40 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#e1c58f]">
               {formatRecordingType(recordingType)}
+            </span>
+
+            <span className="border border-white/10 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#a8adb5]">
+              {isVideo ? "Video" : "Audio"}
             </span>
 
             <span className="border border-white/10 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#a8adb5]">
@@ -267,6 +276,8 @@ export default function RecordingPlayer({
             ) : null}
 
             {formattedSize ? <span>{formattedSize}</span> : null}
+
+            {mimeType ? <span>{mimeType}</span> : null}
 
             <span>Order: {sortOrder}</span>
           </div>
@@ -333,14 +344,25 @@ export default function RecordingPlayer({
 
       {playbackUrl ? (
         <div className="mt-6">
-          <audio
-            controls
-            preload="metadata"
-            src={playbackUrl}
-            className="w-full"
-          >
-            Your browser does not support audio playback.
-          </audio>
+          {isVideo ? (
+            <video
+              controls
+              preload="metadata"
+              src={playbackUrl}
+              className="max-h-[75vh] w-full bg-black"
+            >
+              Your browser does not support video playback.
+            </video>
+          ) : (
+            <audio
+              controls
+              preload="metadata"
+              src={playbackUrl}
+              className="w-full"
+            >
+              Your browser does not support audio playback.
+            </audio>
+          )}
 
           <p className="mt-3 text-xs leading-5 text-[#747b84]">
             This secure playback link expires after one hour.
@@ -472,7 +494,7 @@ export default function RecordingPlayer({
           </h4>
 
           <p className="mt-3 leading-7 text-[#a8adb5]">
-            This removes the recording record and its audio file
+            This removes the recording record and its media file
             from Cloudflare R2. Type{" "}
             <strong className="text-[#f4f1e9]">
               {title}
