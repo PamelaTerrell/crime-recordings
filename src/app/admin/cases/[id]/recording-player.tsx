@@ -10,6 +10,7 @@ type RecordingPlayerProps = {
   fileSizeBytes: number | null;
   accessLevel: string;
   isPublished: boolean;
+  sortOrder: number;
 };
 
 type PlaybackResponse = {

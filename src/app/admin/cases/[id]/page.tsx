@@ -219,6 +219,7 @@ export default async function AdminCasePage({
                 fileSizeBytes={recording.file_size_bytes}
                 accessLevel={recording.access_level}
                 isPublished={recording.is_published}
+                sortOrder={recording.sort_order}
               />
             ))}
           </div>
