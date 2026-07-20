@@ -299,3 +299,42 @@ export async function updateCase(
 
   redirect(`/admin/cases/${caseId}`);
 }
+
+export async function archiveCase(caseId: string) {
+  const { supabase, user } = await requireEditorialAccess();
+
+  const { error } = await supabase
+    .from("cases")
+    .update({
+      case_status: "archived",
+      updated_by: user.id,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", caseId);
+
+  if (error) {
+    throw new Error(`Unable to archive case: ${error.message}`);
+  }
+
+  revalidatePath("/admin");
+  revalidatePath(`/admin/cases/${caseId}`);
+
+  redirect("/admin");
+}
+
+export async function deleteCase(caseId: string) {
+  const { supabase } = await requireEditorialAccess();
+
+  const { error } = await supabase
+    .from("cases")
+    .delete()
+    .eq("id", caseId);
+
+  if (error) {
+    throw new Error(`Unable to delete case: ${error.message}`);
+  }
+
+  revalidatePath("/admin");
+
+  redirect("/admin");
+}
