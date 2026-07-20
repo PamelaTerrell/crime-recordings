@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import CaseDangerActions from "./case-danger-actions";
 
 export default async function AdminCasePage({
   params,
@@ -133,6 +134,12 @@ export default async function AdminCasePage({
           and chapter markers.
         </p>
       </div>
+
+      <CaseDangerActions
+  caseId={caseItem.id}
+  caseTitle={caseItem.title}
+  caseStatus={caseItem.case_status}
+/>
     </section>
   );
 }
