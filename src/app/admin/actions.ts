@@ -96,16 +96,14 @@ export async function createCase(
   const summary = getOptionalString(formData, "summary");
   const description = getOptionalString(formData, "description");
   const contentWarning = getOptionalString(formData, "content_warning");
+  const victimNames = getOptionalString(formData, "victim_names");
+  const accusedNames = getOptionalString(formData, "accused_names");
   const locationCity = getOptionalString(formData, "location_city");
   const locationState = getOptionalString(formData, "location_state");
   const locationCountry =
     getOptionalString(formData, "location_country") ?? "United States";
   const incidentDate = getOptionalString(formData, "incident_date");
 
-  /*
-   * Your existing new-case form may still use name="featured".
-   * This accepts either version so the create form keeps working.
-   */
   const isFeatured =
     formData.get("is_featured") === "on" ||
     formData.get("featured") === "on";
@@ -151,6 +149,8 @@ export async function createCase(
       summary,
       description,
       content_warning: contentWarning,
+      victim_names: victimNames,
+      accused_names: accusedNames,
       location_city: locationCity,
       location_state: locationState,
       location_country: locationCountry,
@@ -189,6 +189,8 @@ export async function updateCase(
   const summary = getOptionalString(formData, "summary");
   const description = getOptionalString(formData, "description");
   const contentWarning = getOptionalString(formData, "content_warning");
+  const victimNames = getOptionalString(formData, "victim_names");
+  const accusedNames = getOptionalString(formData, "accused_names");
   const locationCity = getOptionalString(formData, "location_city");
   const locationState = getOptionalString(formData, "location_state");
   const locationCountry =
@@ -271,6 +273,8 @@ export async function updateCase(
       summary,
       description,
       content_warning: contentWarning,
+      victim_names: victimNames,
+      accused_names: accusedNames,
       location_city: locationCity,
       location_state: locationState,
       location_country: locationCountry,

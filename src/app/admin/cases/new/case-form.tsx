@@ -143,9 +143,60 @@ export default function CaseForm() {
         </div>
       </div>
 
+      <section className="admin-form-section">
+  <div className="admin-form-section-heading">
+    <span>03</span>
+
+    <div>
+      <h2>People involved</h2>
+      <p>
+        Add victims and accused or convicted individuals. Enter one person
+        per line.
+      </p>
+    </div>
+  </div>
+
+  <div className="admin-form-grid">
+    <div className="admin-field">
+      <label htmlFor="victim_names">Victim(s)</label>
+
+      <textarea
+        id="victim_names"
+        name="victim_names"
+        rows={6}
+        placeholder={`Mary Johnson
+Robert Johnson`}
+disabled={pending}
+      />
+
+      <small>Enter one name per line.</small>
+    </div>
+
+    <div className="admin-field">
+      <label htmlFor="accused_names">
+        Accused or convicted person(s)
+      </label>
+
+      <textarea
+        id="accused_names"
+        name="accused_names"
+        rows={6}
+        placeholder={`Thomas Brown — convicted
+Second participant — unidentified`}
+disabled={pending}
+      />
+
+      <small>
+        Include a status such as charged, convicted, acquitted, suspected,
+        or unidentified when appropriate.
+      </small>
+    </div>
+  </div>
+</section>
+
       <div className="admin-form-section">
         <div className="admin-form-section-heading">
-          <span>03</span>
+          <span>04</span>
           <div>
             <h2>Location and date</h2>
             <p>Basic identifying context for the incident.</p>
@@ -196,7 +247,7 @@ export default function CaseForm() {
 
       <div className="admin-form-section">
         <div className="admin-form-section-heading">
-          <span>04</span>
+          <span>05</span>
           <div>
             <h2>Editorial settings</h2>
             <p>
