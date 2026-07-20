@@ -31,8 +31,8 @@ export default async function EditCasePage({
         location_state,
         location_country,
         incident_date,
-        featured,
-        status
+        is_featured,
+        case_status
       `,
     )
     .eq("id", id)

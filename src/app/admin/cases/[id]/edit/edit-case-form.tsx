@@ -15,8 +15,8 @@ type EditableCase = {
   location_state: string | null;
   location_country: string | null;
   incident_date: string | null;
-  featured: boolean;
-  status: string;
+  is_featured: boolean;
+  case_status: string;
 };
 
 type EditCaseFormProps = {
@@ -38,10 +38,7 @@ export default function EditCaseForm({
   return (
     <form action={formAction} className="admin-form">
       {state.error && (
-        <div
-          className="admin-alert admin-alert-error"
-          role="alert"
-        >
+        <div className="admin-alert admin-alert-error" role="alert">
           {state.error}
         </div>
       )}
@@ -61,6 +58,7 @@ export default function EditCaseForm({
         <div className="admin-form-grid">
           <div className="admin-field admin-field-full">
             <label htmlFor="title">Case title</label>
+
             <input
               id="title"
               name="title"
@@ -72,6 +70,7 @@ export default function EditCaseForm({
 
           <div className="admin-field admin-field-full">
             <label htmlFor="subtitle">Subtitle</label>
+
             <input
               id="subtitle"
               name="subtitle"
@@ -82,6 +81,7 @@ export default function EditCaseForm({
 
           <div className="admin-field">
             <label htmlFor="slug">URL slug</label>
+
             <input
               id="slug"
               name="slug"
@@ -90,18 +90,17 @@ export default function EditCaseForm({
               required
             />
 
-            <small>
-              Example: the-disappearance-of-jane-doe
-            </small>
+            <small>Example: the-disappearance-of-jane-doe</small>
           </div>
 
           <div className="admin-field">
-            <label htmlFor="status">Case status</label>
+            <label htmlFor="case_status">Case status</label>
 
             <select
-              id="status"
-              name="status"
-              defaultValue={caseRecord.status}
+              id="case_status"
+              name="case_status"
+              defaultValue={caseRecord.case_status}
+              required
             >
               <option value="draft">Draft</option>
               <option value="review">In review</option>
@@ -119,6 +118,7 @@ export default function EditCaseForm({
 
           <div>
             <h2>Case overview</h2>
+
             <p>
               Update the summary, complete description, and content warning.
             </p>
@@ -128,6 +128,7 @@ export default function EditCaseForm({
         <div className="admin-form-grid">
           <div className="admin-field admin-field-full">
             <label htmlFor="summary">Summary</label>
+
             <textarea
               id="summary"
               name="summary"
@@ -137,9 +138,7 @@ export default function EditCaseForm({
           </div>
 
           <div className="admin-field admin-field-full">
-            <label htmlFor="description">
-              Detailed description
-            </label>
+            <label htmlFor="description">Detailed description</label>
 
             <textarea
               id="description"
@@ -150,9 +149,7 @@ export default function EditCaseForm({
           </div>
 
           <div className="admin-field admin-field-full">
-            <label htmlFor="content_warning">
-              Content warning
-            </label>
+            <label htmlFor="content_warning">Content warning</label>
 
             <textarea
               id="content_warning"
@@ -170,6 +167,7 @@ export default function EditCaseForm({
 
           <div>
             <h2>Incident information</h2>
+
             <p>
               Edit the known date and location associated with the case.
             </p>
@@ -178,9 +176,7 @@ export default function EditCaseForm({
 
         <div className="admin-form-grid">
           <div className="admin-field">
-            <label htmlFor="incident_date">
-              Incident date
-            </label>
+            <label htmlFor="incident_date">Incident date</label>
 
             <input
               id="incident_date"
@@ -230,17 +226,17 @@ export default function EditCaseForm({
       <section className="admin-form-section">
         <label className="admin-checkbox">
           <input
-            name="featured"
+            name="is_featured"
             type="checkbox"
-            defaultChecked={caseRecord.featured}
+            defaultChecked={caseRecord.is_featured}
           />
 
           <span>
             <strong>Feature this case</strong>
 
             <small>
-              Featured cases can later be highlighted on the public
-              homepage and archive.
+              Featured cases can later be highlighted on the public homepage
+              and archive.
             </small>
           </span>
         </label>
