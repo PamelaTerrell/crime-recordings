@@ -61,12 +61,21 @@ export default async function AdminCasePage({
             {caseItem.case_status}
           </span>
 
+           <Link
+  href={`/admin/cases/${caseItem.id}/recordings/new`}
+  className="admin-primary-link"
+>
+  Add audio
+</Link>
+
           <Link
             href={`/admin/cases/${caseItem.id}/edit`}
             className="admin-primary-link"
           >
             Edit case
           </Link>
+
+         
         </div>
       </div>
 
