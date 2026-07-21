@@ -54,6 +54,7 @@ export default async function AdminCasePage({
         file_size_bytes,
         access_level,
         is_published,
+        is_featured,
         sort_order,
         created_at
       `,
@@ -221,6 +222,7 @@ export default async function AdminCasePage({
                 fileSizeBytes={recording.file_size_bytes}
                 accessLevel={recording.access_level}
                 isPublished={recording.is_published}
+                isFeatured={recording.is_featured}
                 sortOrder={recording.sort_order}
               />
             ))}

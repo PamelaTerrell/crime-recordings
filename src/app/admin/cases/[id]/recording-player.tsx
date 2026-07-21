@@ -12,6 +12,7 @@ type RecordingPlayerProps = {
   fileSizeBytes: number | null;
   accessLevel: string;
   isPublished: boolean;
+  isFeatured: boolean;
   sortOrder: number;
 };
 
@@ -85,6 +86,7 @@ export default function RecordingPlayer({
   fileSizeBytes,
   accessLevel,
   isPublished,
+  isFeatured,
   sortOrder,
 }: RecordingPlayerProps) {
   const router = useRouter();
@@ -102,6 +104,8 @@ export default function RecordingPlayer({
   >(accessLevel === "public" ? "public" : "member");
   const [editedPublished, setEditedPublished] =
     useState(isPublished);
+  const [editedFeatured, setEditedFeatured] =
+  useState(isFeatured);
   const [editedSortOrder, setEditedSortOrder] =
     useState(sortOrder);
 
@@ -171,12 +175,13 @@ export default function RecordingPlayer({
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            title: editedTitle,
-            recordingType: editedType,
-            accessLevel: editedAccess,
-            isPublished: editedPublished,
-            sortOrder: editedSortOrder,
-          }),
+  title: editedTitle,
+  recordingType: editedType,
+  accessLevel: editedAccess,
+  isPublished: editedPublished,
+  isFeatured: editedFeatured,
+  sortOrder: editedSortOrder,
+}),
         },
       );
 
@@ -254,6 +259,12 @@ export default function RecordingPlayer({
             <span className="border border-white/10 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#a8adb5]">
               {isVideo ? "Video" : "Audio"}
             </span>
+
+            {isFeatured ? (
+  <span className="border border-[#c8a66a] bg-[#c8a66a]/10 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#e1c58f]">
+    Featured hero
+  </span>
+) : null}
 
             <span className="border border-white/10 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#a8adb5]">
               {accessLevel === "public"
@@ -455,21 +466,69 @@ export default function RecordingPlayer({
               />
             </label>
 
-            <label className="flex items-center gap-3 self-end pb-3">
-              <input
-                type="checkbox"
-                checked={editedPublished}
-                onChange={(event) =>
-                  setEditedPublished(event.target.checked)
-                }
-                disabled={pendingAction !== null}
-                className="h-5 w-5 accent-[#c8a66a]"
-              />
+            <div className="grid gap-4 self-end pb-3">
+  <label className="flex items-start gap-3">
+    <input
+      type="checkbox"
+      checked={editedPublished}
+      onChange={(event) => {
+        const checked = event.target.checked;
 
-              <span className="text-sm text-[#d8d9dc]">
-                Published
-              </span>
-            </label>
+        setEditedPublished(checked);
+
+        if (!checked) {
+          setEditedFeatured(false);
+        }
+      }}
+      disabled={pendingAction !== null}
+      className="mt-0.5 h-5 w-5 accent-[#c8a66a]"
+    />
+
+    <span>
+      <strong className="block text-sm font-medium text-[#d8d9dc]">
+        Published
+      </strong>
+
+      <small className="mt-1 block text-xs leading-5 text-[#747b84]">
+        Only published recordings can appear publicly.
+      </small>
+    </span>
+  </label>
+
+  <label
+    className={`flex items-start gap-3 ${
+      !isVideo ? "cursor-not-allowed opacity-50" : ""
+    }`}
+  >
+    <input
+      type="checkbox"
+      checked={editedFeatured}
+      onChange={(event) => {
+        const checked = event.target.checked;
+
+        setEditedFeatured(checked);
+
+        if (checked) {
+          setEditedPublished(true);
+        }
+      }}
+      disabled={!isVideo || pendingAction !== null}
+      className="mt-0.5 h-5 w-5 accent-[#c8a66a]"
+    />
+
+    <span>
+      <strong className="block text-sm font-medium text-[#d8d9dc]">
+        Feature at top of public case page
+      </strong>
+
+      <small className="mt-1 block text-xs leading-5 text-[#747b84]">
+        {isVideo
+          ? "This video will become the large hero video for the case."
+          : "Only video recordings can be featured."}
+      </small>
+    </span>
+  </label>
+</div>
           </div>
 
           <div>

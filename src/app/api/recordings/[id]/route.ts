@@ -1,6 +1,4 @@
-import {
-  DeleteObjectCommand,
-} from "@aws-sdk/client-s3";
+import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { NextResponse } from "next/server";
 import { r2BucketName, r2Client } from "@/lib/r2";
 import { createClient } from "@/lib/supabase/server";
@@ -48,8 +46,7 @@ async function requireEditorialAccess() {
     return {
       errorResponse: NextResponse.json(
         {
-          error:
-            "You do not have permission to manage recordings.",
+          error: "You do not have permission to manage recordings.",
         },
         { status: 403 },
       ),
@@ -82,9 +79,7 @@ export async function PATCH(
     const body = await request.json();
 
     const title =
-      typeof body.title === "string"
-        ? body.title.trim()
-        : "";
+      typeof body.title === "string" ? body.title.trim() : "";
 
     const recordingType =
       typeof body.recordingType === "string"
@@ -97,6 +92,7 @@ export async function PATCH(
         : "";
 
     const isPublished = body.isPublished === true;
+    const isFeatured = body.isFeatured === true;
 
     const sortOrder =
       typeof body.sortOrder === "number" &&
@@ -128,7 +124,15 @@ export async function PATCH(
     const { data: currentRecording, error: currentError } =
       await supabase
         .from("recordings")
-        .select("id, published_at")
+        .select(
+          `
+            id,
+            case_id,
+            mime_type,
+            published_at,
+            is_featured
+          `,
+        )
         .eq("id", id)
         .maybeSingle();
 
@@ -146,10 +150,59 @@ export async function PATCH(
       );
     }
 
+    const isVideo =
+      currentRecording.mime_type?.startsWith("video/") ?? false;
+
+    if (isFeatured && !isVideo) {
+      return NextResponse.json(
+        {
+          error:
+            "Only video recordings can be featured at the top of a public case page.",
+        },
+        { status: 400 },
+      );
+    }
+
+    if (isFeatured && !isPublished) {
+      return NextResponse.json(
+        {
+          error:
+            "A featured video must also be published.",
+        },
+        { status: 400 },
+      );
+    }
+
     const publishedAt = isPublished
       ? currentRecording.published_at ??
         new Date().toISOString()
       : null;
+
+    /*
+     * Remove the featured flag from every other recording
+     * belonging to this case before featuring the selected one.
+     */
+    if (isFeatured) {
+      const { error: clearFeaturedError } = await supabase
+        .from("recordings")
+        .update({
+          is_featured: false,
+          updated_by: user.id,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("case_id", currentRecording.case_id)
+        .neq("id", id)
+        .eq("is_featured", true);
+
+      if (clearFeaturedError) {
+        return NextResponse.json(
+          {
+            error: `Unable to replace the current featured video: ${clearFeaturedError.message}`,
+          },
+          { status: 500 },
+        );
+      }
+    }
 
     const { error: updateError } = await supabase
       .from("recordings")
@@ -158,6 +211,7 @@ export async function PATCH(
         recording_type: recordingType,
         access_level: accessLevel,
         is_published: isPublished,
+        is_featured: isFeatured,
         published_at: publishedAt,
         sort_order: sortOrder,
         updated_by: user.id,
@@ -211,11 +265,13 @@ export async function DELETE(
     const { data: recording, error: recordingError } =
       await supabase
         .from("recordings")
-        .select(`
-          id,
-          full_object_key,
-          preview_object_key
-        `)
+        .select(
+          `
+            id,
+            full_object_key,
+            preview_object_key
+          `,
+        )
         .eq("id", id)
         .maybeSingle();
 
@@ -233,11 +289,6 @@ export async function DELETE(
       );
     }
 
-    /*
-     * Remove the database row first. If R2 cleanup later fails,
-     * the user-facing recording is still removed and we can clean
-     * up the orphaned object separately.
-     */
     const { error: deleteError } = await supabase
       .from("recordings")
       .delete()
@@ -283,7 +334,7 @@ export async function DELETE(
     return NextResponse.json({
       success: true,
       cleanupWarning: cleanupFailed
-        ? "The recording was removed, but an audio object may require manual cleanup."
+        ? "The recording was removed, but a media object may require manual cleanup."
         : null,
     });
   } catch (error) {
