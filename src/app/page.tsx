@@ -1,10 +1,14 @@
 import Image from "next/image";
+import Link from "next/link";
+import { createClient } from "@/lib/supabase/server";
+import PublicMediaPlayer from "@/app/cases/[slug]/public-media-player";
 
 const RECORDING_TYPES = [
   "Interviews",
   "Interrogations",
   "Emergency Calls",
   "Dispatch Audio",
+  "Body-Camera Video",
   "Courtroom Recordings",
   "Official Statements",
 ];
@@ -14,7 +18,7 @@ const PLATFORM_FEATURES = [
     number: "01",
     title: "Original recordings",
     description:
-      "Listen to recordings obtained from official agencies and public-records sources.",
+      "Watch and listen to recordings obtained from official agencies and public-records sources.",
   },
   {
     number: "02",
@@ -26,15 +30,108 @@ const PLATFORM_FEATURES = [
     number: "03",
     title: "Complete access",
     description:
-      "Watch selected excerpts publicly and explore extended recordings through the full archive.",
+      "Watch selected recordings publicly and explore extended case media through the full archive.",
   },
 ];
 
-export default function Home() {
+async function getHomepageFeaturedVideo() {
+  const supabase = await createClient();
+
+  const { data: recording, error: recordingError } = await supabase
+    .from("recordings")
+    .select(
+      `
+        id,
+        case_id,
+        title,
+        mime_type,
+        access_level,
+        is_published,
+        is_featured
+      `,
+    )
+    .eq("is_published", true)
+    .eq("is_featured", true)
+    .eq("access_level", "public")
+    .like("mime_type", "video/%")
+    .limit(1)
+    .maybeSingle();
+
+  if (recordingError || !recording) {
+    return null;
+  }
+
+  const { data: caseItem, error: caseError } = await supabase
+    .from("cases")
+    .select(
+      `
+        id,
+        title,
+        slug,
+        summary,
+        incident_date,
+        location_city,
+        location_state,
+        location_country,
+        case_status
+      `,
+    )
+    .eq("id", recording.case_id)
+    .eq("case_status", "published")
+    .maybeSingle();
+
+  if (caseError || !caseItem) {
+    return null;
+  }
+
+  return {
+    recording,
+    caseItem,
+  };
+}
+
+function formatDate(value: string | null) {
+  if (!value) {
+    return "Date not listed";
+  }
+
+  const parsedDate = new Date(`${value}T12:00:00`);
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  }).format(parsedDate);
+}
+
+export default async function Home() {
+  const featuredResult = await getHomepageFeaturedVideo();
+
+  const featuredRecording = featuredResult?.recording ?? null;
+  const featuredCase = featuredResult?.caseItem ?? null;
+
+  const featuredLocation = featuredCase
+    ? [
+        featuredCase.location_city,
+        featuredCase.location_state,
+        featuredCase.location_country,
+      ]
+        .filter(Boolean)
+        .join(", ")
+    : "";
+
   return (
     <main>
       <header className="site-header">
-        <a className="brand" href="#top" aria-label="Crime Recordings home">
+        <Link
+          className="brand"
+          href="/"
+          aria-label="Crime Recordings home"
+        >
           <Image
             src="/crime-recordings-logo.png"
             alt="Crime Recordings"
@@ -43,116 +140,153 @@ export default function Home() {
             priority
             className="site-logo"
           />
-        </a>
+        </Link>
 
         <nav className="site-nav" aria-label="Primary navigation">
           <a href="#about">About</a>
-          <a href="#archive">The Archive</a>
-          <a href="#coming-soon">Updates</a>
-          <a href="/login">Sign In</a>
+          <Link href="/cases">The Archive</Link>
+          <a href="#updates">Updates</a>
+          <Link href="/login">Sign In</Link>
         </nav>
       </header>
 
-      <section className="hero" id="top">
-        <div className="hero-grid" aria-hidden="true" />
+      {featuredRecording && featuredCase ? (
+        <section
+          id="top"
+          className="bg-[#080b0f] px-0 pb-16 pt-36 text-[#f4f1e9] md:pb-24 md:pt-40"
+        >
+          <div className="mx-auto max-w-[1600px]">
+            <div className="px-5 pb-9 md:px-10 lg:px-16">
+              <p className="mb-4 text-xs font-extrabold uppercase tracking-[0.24em] text-[#e1c58f]">
+                Featured public recording
+              </p>
 
-        <div className="hero-content">
-          <p className="eyebrow">
-            Public records · Original audio · True cases
-          </p>
+              <div className="grid gap-7 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+                <div>
+                  <h1 className="m-0 max-w-6xl font-serif text-[clamp(3.5rem,8vw,8rem)] font-medium leading-[0.9] tracking-[-0.055em]">
+                    {featuredCase.title}
+                  </h1>
 
-          <h1>
-            Hear the records
-            <span>behind the cases.</span>
-          </h1>
+                  <p className="mt-6 max-w-4xl font-serif text-2xl leading-9 text-[#c8cbd0] md:text-3xl">
+                    {featuredRecording.title}
+                  </p>
+                </div>
 
-          <p className="hero-description">
-            Crime Recordings presents interviews, interrogations, emergency
-            calls, dispatch audio, and other official recordings obtained
-            through public-records requests.
-          </p>
+                <div className="border-l border-[#c8a66a]/40 pl-6 text-sm leading-7 text-[#a8adb5]">
+                  <p className="m-0">
+                    {formatDate(featuredCase.incident_date)}
+                  </p>
 
-          <div className="hero-actions">
-            <a className="primary-button" href="#coming-soon">
-              Follow the investigation
-              <span aria-hidden="true">→</span>
-            </a>
-
-            <a className="secondary-button" href="#about">
-              Learn about the archive
-            </a>
-          </div>
-
-          <div className="audio-preview" aria-label="Audio preview placeholder">
-            <button
-              className="play-button"
-              type="button"
-              aria-label="Audio preview coming soon"
-              disabled
-            >
-              ▶
-            </button>
-
-            <div className="audio-information">
-              <span className="audio-label">Archive preview</span>
-
-              <strong>First recording coming soon</strong>
-
-              <div className="audio-progress" aria-hidden="true">
-                <span />
+                  {featuredLocation ? (
+                    <p className="m-0">{featuredLocation}</p>
+                  ) : null}
+                </div>
               </div>
             </div>
 
-            <span className="audio-time">00:00</span>
+            <PublicMediaPlayer
+              recordingId={featuredRecording.id}
+              title={featuredRecording.title}
+              mimeType={featuredRecording.mime_type}
+              accessLevel={featuredRecording.access_level}
+              featured
+            />
+
+            <div className="grid gap-7 px-5 pt-9 md:px-10 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center lg:px-16">
+              <p className="m-0 max-w-4xl text-base leading-8 text-[#a8adb5] md:text-lg">
+                {featuredCase.summary ??
+                  "Watch this featured public-record video and explore the complete documented case archive."}
+              </p>
+
+              <Link
+                href={`/cases/${featuredCase.slug}`}
+                className="inline-flex min-h-14 items-center justify-center border border-[#c8a66a] bg-[#c8a66a] px-7 text-xs font-extrabold uppercase tracking-[0.1em] text-[#111318] transition hover:bg-[#e1c58f]"
+              >
+                View complete case
+                <span className="ml-4" aria-hidden="true">
+                  →
+                </span>
+              </Link>
+            </div>
           </div>
-        </div>
+        </section>
+      ) : (
+        <section className="hero" id="top">
+          <div className="hero-grid" aria-hidden="true" />
 
-        <aside className="case-file" aria-label="Crime Recordings introduction">
-          <div className="file-top">
-            <span>Crime Recordings</span>
-            <span>File 001</span>
+          <div className="hero-content">
+            <p className="eyebrow">
+              Public records · Original media · True cases
+            </p>
+
+            <h1>
+              See the records
+              <span>behind the cases.</span>
+            </h1>
+
+            <p className="hero-description">
+              Crime Recordings presents interviews, interrogations,
+              emergency calls, body-camera footage, dispatch audio,
+              and other official recordings obtained through
+              public-records requests.
+            </p>
+
+            <div className="hero-actions">
+              <Link className="primary-button" href="/cases">
+                Explore the archive
+                <span aria-hidden="true">→</span>
+              </Link>
+
+              <a className="secondary-button" href="#about">
+                Learn about the archive
+              </a>
+            </div>
           </div>
 
-          <div className="file-stamp">Original Record</div>
-
-          <div className="waveform" aria-hidden="true">
-            {Array.from({ length: 46 }, (_, index) => (
-              <span
-                key={index}
-                style={{
-                  height: `${18 + ((index * 19) % 68)}%`,
-                }}
-              />
-            ))}
-          </div>
-
-          <dl className="file-details">
-            <div>
-              <dt>Source</dt>
-              <dd>Official public record</dd>
+          <aside
+            className="case-file"
+            aria-label="Crime Recordings introduction"
+          >
+            <div className="file-top">
+              <span>Crime Recordings</span>
+              <span>File 001</span>
             </div>
 
-            <div>
-              <dt>Format</dt>
-              <dd>Audio archive</dd>
+            <div className="file-stamp">Original Record</div>
+
+            <div className="waveform" aria-hidden="true">
+              {Array.from({ length: 46 }, (_, index) => (
+                <span
+                  key={index}
+                  style={{
+                    height: `${18 + ((index * 19) % 68)}%`,
+                  }}
+                />
+              ))}
             </div>
 
-            <div>
-              <dt>Status</dt>
-              <dd>
-                <span className="status-dot" />
-                In development
-              </dd>
-            </div>
-          </dl>
+            <dl className="file-details">
+              <div>
+                <dt>Source</dt>
+                <dd>Official public record</dd>
+              </div>
 
-          <p className="file-note">
-            Selected excerpts will appear on YouTube. Complete recordings,
-            timelines, transcripts, and source information will be available
-            here.
-          </p>
-        </aside>
-      </section>
+              <div>
+                <dt>Format</dt>
+                <dd>Audio and video archive</dd>
+              </div>
+
+              <div>
+                <dt>Status</dt>
+                <dd>
+                  <span className="status-dot" />
+                  Archive active
+                </dd>
+              </div>
+            </dl>
+          </aside>
+        </section>
+      )}
 
       <section className="statement-section" id="about">
         <p className="section-label">Why Crime Recordings</p>
@@ -163,14 +297,14 @@ export default function Home() {
           <div className="statement-copy">
             <p>
               True-crime stories are often condensed into headlines,
-              summaries, and commentary. Crime Recordings takes listeners
-              closer to the original record.
+              summaries, and commentary. Crime Recordings takes viewers
+              and listeners closer to the original record.
             </p>
 
             <p>
-              Our goal is to present compelling source material with context,
-              careful organization, and respect for the people connected to
-              each case.
+              Our goal is to present compelling source material with
+              context, careful organization, and respect for the people
+              connected to each case.
             </p>
           </div>
         </div>
@@ -180,20 +314,26 @@ export default function Home() {
         <div className="section-heading">
           <div>
             <p className="section-label">Inside the archive</p>
+
             <h2>Real cases. Original recordings.</h2>
           </div>
 
           <p>
-            Built as a growing documentary archive rather than a collection of
-            disconnected clips.
+            Built as a growing documentary archive rather than a
+            collection of disconnected clips.
           </p>
         </div>
 
         <div className="feature-grid">
           {PLATFORM_FEATURES.map((feature) => (
-            <article className="feature-card" key={feature.number}>
+            <article
+              className="feature-card"
+              key={feature.number}
+            >
               <span>{feature.number}</span>
+
               <h3>{feature.title}</h3>
+
               <p>{feature.description}</p>
             </article>
           ))}
@@ -204,24 +344,37 @@ export default function Home() {
             <span key={type}>{type}</span>
           ))}
         </div>
+
+        <div className="mt-12">
+          <Link className="primary-button" href="/cases">
+            Browse published cases
+            <span aria-hidden="true">→</span>
+          </Link>
+        </div>
       </section>
 
-      <section className="coming-soon-section" id="coming-soon">
+      <section className="coming-soon-section" id="updates">
         <div>
-          <p className="section-label">The first case is coming</p>
-          <h2>Crime Recordings is now under development.</h2>
+          <p className="section-label">The archive is open</p>
+
+          <h2>Crime Recordings is actively growing.</h2>
         </div>
 
         <div className="coming-soon-copy">
           <p>
-            We are preparing the first collection of official recordings,
-            supporting timelines, source details, and case background.
+            We are organizing additional official recordings,
+            supporting timelines, source details, and factual case
+            background.
+          </p>
+
+          <p>
+            New public videos and complete case archives will be added
+            as the material is reviewed and prepared.
           </p>
 
           <p className="launch-note">
-            CrimeRecordings.com · Established 2026 
+            CrimeRecordings.com · Established 2026
           </p>
-          
         </div>
       </section>
 
@@ -238,7 +391,10 @@ export default function Home() {
           <p>Real cases. Original recordings.</p>
         </div>
 
-        <p>© {new Date().getFullYear()} Crime Recordings - A Stabile USA Project</p>
+        <p>
+          © {new Date().getFullYear()} Crime Recordings — A Stabile
+          USA Project
+        </p>
       </footer>
     </main>
   );
