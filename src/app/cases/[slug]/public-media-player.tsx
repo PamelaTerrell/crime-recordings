@@ -14,6 +14,7 @@ type PublicMediaPlayerProps = {
 type PlaybackResponse = {
   playbackUrl?: string;
   error?: string;
+  requiresSignIn?: boolean;
   requiresMembership?: boolean;
 };
 
@@ -43,6 +44,10 @@ export default function PublicMediaPlayer({
   const [playbackUrl, setPlaybackUrl] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
+  const [requiresSignIn, setRequiresSignIn] =
+    useState(false);
+  const [requiresMembership, setRequiresMembership] =
+    useState(false);
 
   const isVideo = mimeType?.startsWith("video/") ?? false;
   const isMemberOnly = accessLevel === "member";
@@ -50,6 +55,8 @@ export default function PublicMediaPlayer({
   async function loadPlayer() {
     setPending(true);
     setError("");
+    setRequiresSignIn(false);
+    setRequiresMembership(false);
 
     try {
       const response = await fetch(
@@ -68,6 +75,11 @@ export default function PublicMediaPlayer({
       const data = await readJsonResponse(response);
 
       if (!response.ok || !data.playbackUrl) {
+        setRequiresSignIn(data.requiresSignIn === true);
+        setRequiresMembership(
+          data.requiresMembership === true,
+        );
+
         throw new Error(
           data.error ?? "The recording could not be loaded.",
         );
@@ -83,45 +95,6 @@ export default function PublicMediaPlayer({
     } finally {
       setPending(false);
     }
-  }
-
-  if (isMemberOnly && !playbackUrl) {
-    return (
-      <div
-        className={
-          featured
-            ? "relative grid min-h-[62vh] place-items-center overflow-hidden border-y border-white/10 bg-[#080b0f] px-6 py-20 text-center md:min-h-[78vh]"
-            : "grid min-h-80 place-items-center border border-white/10 bg-[#10151b] p-8 text-center"
-        }
-      >
-        <div
-          aria-hidden="true"
-          className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(200,166,106,0.14),transparent_42%)]"
-        />
-
-        <div className="relative z-10 max-w-2xl">
-          <p className="mb-4 text-xs font-extrabold uppercase tracking-[0.22em] text-[#e1c58f]">
-            Members-only recording
-          </p>
-
-          <h2 className="m-0 font-serif text-4xl font-medium text-[#f4f1e9] md:text-6xl">
-            {title}
-          </h2>
-
-          <p className="mx-auto mt-6 max-w-xl text-base leading-8 text-[#a8adb5]">
-            This full recording will be available to active
-            Crime Recordings members.
-          </p>
-
-          <Link
-            href="/login"
-            className="mt-8 inline-flex min-h-14 items-center justify-center border border-[#c8a66a] bg-[#c8a66a] px-7 text-xs font-extrabold uppercase tracking-[0.1em] text-[#111318] transition hover:bg-[#e1c58f]"
-          >
-            Sign in
-          </Link>
-        </div>
-      </div>
-    );
   }
 
   if (playbackUrl) {
@@ -158,17 +131,33 @@ export default function PublicMediaPlayer({
       className={
         featured
           ? "relative grid min-h-[62vh] place-items-center overflow-hidden border-y border-white/10 bg-black px-6 py-20 text-center md:min-h-[78vh]"
-          : "grid min-h-72 place-items-center border border-white/10 bg-[#10151b] p-8 text-center"
+          : "relative grid min-h-72 place-items-center overflow-hidden border border-white/10 bg-[#10151b] p-8 text-center"
       }
     >
-      <div className="max-w-xl">
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(200,166,106,0.14),transparent_42%)]"
+      />
+
+      <div className="relative z-10 max-w-xl">
         <p className="mb-4 text-xs font-extrabold uppercase tracking-[0.2em] text-[#e1c58f]">
-          {isVideo ? "Featured video" : "Case recording"}
+          {isMemberOnly
+            ? "Members-only recording"
+            : isVideo
+              ? "Featured video"
+              : "Case recording"}
         </p>
 
         <h2 className="m-0 font-serif text-4xl font-medium text-[#f4f1e9] md:text-6xl">
           {title}
         </h2>
+
+        {isMemberOnly ? (
+          <p className="mx-auto mt-6 max-w-xl text-base leading-8 text-[#a8adb5]">
+            Active Crime Recordings members can securely play this
+            complete recording.
+          </p>
+        ) : null}
 
         <button
           type="button"
@@ -177,7 +166,7 @@ export default function PublicMediaPlayer({
           className="mt-8 inline-flex min-h-14 items-center justify-center border border-[#c8a66a] bg-[#c8a66a] px-7 text-xs font-extrabold uppercase tracking-[0.1em] text-[#111318] transition hover:bg-[#e1c58f] disabled:cursor-wait disabled:opacity-60"
         >
           {pending
-            ? "Preparing recording…"
+            ? "Checking access…"
             : isVideo
               ? "Play video"
               : "Play recording"}
@@ -190,6 +179,24 @@ export default function PublicMediaPlayer({
           >
             {error}
           </p>
+        ) : null}
+
+        {requiresSignIn ? (
+          <Link
+            href="/login"
+            className="mt-5 inline-flex min-h-12 items-center justify-center border border-[#c8a66a] bg-[#c8a66a] px-6 text-xs font-extrabold uppercase tracking-[0.1em] text-[#111318] transition hover:bg-[#e1c58f]"
+          >
+            Sign in
+          </Link>
+        ) : null}
+
+        {requiresMembership ? (
+          <Link
+            href="/membership"
+            className="mt-5 inline-flex min-h-12 items-center justify-center border border-[#c8a66a] bg-[#c8a66a] px-6 text-xs font-extrabold uppercase tracking-[0.1em] text-[#111318] transition hover:bg-[#e1c58f]"
+          >
+            Become a member
+          </Link>
         ) : null}
       </div>
     </div>
