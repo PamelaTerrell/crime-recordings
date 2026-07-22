@@ -505,23 +505,43 @@ export default async function Home() {
       </section>
 
       <footer className="site-footer">
-        <div className="footer-brand">
-          <Image
-            src="/crime-recordings-logo.png"
-            alt="Crime Recordings"
-            width={240}
-            height={160}
-            className="footer-logo"
-          />
+  <div className="footer-brand">
+    <Image
+      src="/crime-recordings-logo.png"
+      alt="Crime Recordings"
+      width={240}
+      height={160}
+      className="footer-logo"
+    />
 
-          <p>Real cases. Original recordings.</p>
-        </div>
+    <p>Real cases. Original recordings.</p>
+  </div>
 
-        <p>
-          © {new Date().getFullYear()} Crime Recordings —
-          A Stabile USA Project
-        </p>
-      </footer>
+  <div className="flex flex-col gap-4 text-sm">
+    <nav className="flex flex-wrap gap-x-6 gap-y-3">
+      <Link href="/cases">
+        Cases
+      </Link>
+
+      <Link href="/membership">
+        Membership
+      </Link>
+
+      <Link href="/account">
+        My Account
+      </Link>
+
+      <Link href="/privacy">
+        Privacy
+      </Link>
+    </nav>
+
+    <p>
+      © {new Date().getFullYear()} Crime Recordings —
+      A Stabile USA Project
+    </p>
+  </div>
+</footer>
     </main>
   );
 }
