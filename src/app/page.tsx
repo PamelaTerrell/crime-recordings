@@ -518,7 +518,10 @@ export default async function Home() {
   </div>
 
   <div className="flex flex-col gap-4 text-sm">
-    <nav className="flex flex-wrap gap-x-6 gap-y-3">
+    <nav
+      className="flex flex-wrap gap-x-6 gap-y-3"
+      aria-label="Footer navigation"
+    >
       <Link href="/cases">
         Cases
       </Link>
@@ -533,6 +536,10 @@ export default async function Home() {
 
       <Link href="/privacy">
         Privacy
+      </Link>
+
+      <Link href="/terms">
+        Terms
       </Link>
     </nav>
 
