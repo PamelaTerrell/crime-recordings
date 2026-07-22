@@ -194,155 +194,145 @@ export default async function CasesArchivePage() {
         </div>
       </section>
 
-      <section className="px-5 py-16 md:px-10 lg:px-16 lg:py-24">
-        <div className="mx-auto max-w-[1500px]">
-          {publishedCases.length > 0 ? (
-            <div className="grid gap-px overflow-hidden border border-white/10 bg-white/10">
-              {publishedCases.map((caseItem, index) => {
-                const location = createLocation(
-                  caseItem.location_city,
-                  caseItem.location_state,
-                  caseItem.location_country,
-                );
-
-                const recordingCount =
-                  recordingCounts.get(caseItem.id) ?? 0;
-
-                const hasFeaturedVideo =
-                  featuredVideoCases.has(caseItem.id);
-
-                return (
-                  <article
-                    key={caseItem.id}
-                    className="group relative bg-[#0d1218] p-6 transition hover:bg-[#111820] md:p-10 lg:p-14"
-                  >
-                    <Link
-                      href={`/cases/${caseItem.slug}`}
-                      className="absolute inset-0 z-10"
-                      aria-label={`Open ${caseItem.title}`}
-                    />
-
-                    <div className="relative grid gap-10 lg:grid-cols-[100px_minmax(0,1fr)_minmax(240px,0.38fr)] lg:items-start">
-                      <div className="font-serif text-3xl text-[#c8a66a]">
-                        {String(index + 1).padStart(2, "0")}
-                      </div>
-
-                      <div>
-                        <div className="mb-5 flex flex-wrap gap-2">
-                          {caseItem.is_featured ? (
-                            <span className="border border-[#c8a66a] bg-[#c8a66a]/10 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#e1c58f]">
-                              Featured case
-                            </span>
-                          ) : null}
-
-                          {hasFeaturedVideo ? (
-                            <span className="border border-white/10 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#a8adb5]">
-                              Featured video
-                            </span>
-                          ) : null}
-
-                          <span className="border border-white/10 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#a8adb5]">
-                            {recordingCount}{" "}
-                            {recordingCount === 1
-                              ? "recording"
-                              : "recordings"}
-                          </span>
-                        </div>
-
-                        <h2 className="m-0 max-w-4xl font-serif text-4xl font-medium leading-[1.02] tracking-[-0.035em] transition group-hover:text-[#e1c58f] md:text-6xl">
-                          {caseItem.title}
-                        </h2>
-
-                        {caseItem.subtitle ? (
-                          <p className="mt-5 max-w-3xl font-serif text-xl leading-8 text-[#c8cbd0]">
-                            {caseItem.subtitle}
-                          </p>
-                        ) : null}
-
-                        <p className="mt-6 max-w-3xl text-base leading-8 text-[#a8adb5]">
-                          {caseItem.summary ??
-                            "A documented case archive containing public-record media and investigative recordings."}
-                        </p>
-
-                        <div className="relative z-20 mt-8 inline-flex items-center gap-4 text-xs font-extrabold uppercase tracking-[0.12em] text-[#e1c58f]">
-                          View case
-                          <span
-                            aria-hidden="true"
-                            className="transition-transform group-hover:translate-x-2"
-                          >
-                            →
-                          </span>
-                        </div>
-                      </div>
-
-                      <dl className="border-t border-white/10 text-sm lg:border-l lg:border-t-0 lg:pl-8">
-                        <div className="border-b border-white/10 py-5 lg:pt-0">
-                          <dt className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#747b84]">
-                            Incident date
-                          </dt>
-
-                          <dd className="mt-2 text-[#d8d9dc]">
-                            {formatDate(caseItem.incident_date)}
-                          </dd>
-                        </div>
-
-                        <div className="border-b border-white/10 py-5">
-                          <dt className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#747b84]">
-                            Location
-                          </dt>
-
-                          <dd className="mt-2 leading-6 text-[#d8d9dc]">
-                            {location}
-                          </dd>
-                        </div>
-
-                        <div className="border-b border-white/10 py-5">
-                          <dt className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#747b84]">
-                            Victim(s)
-                          </dt>
-
-                          <dd className="mt-2 whitespace-pre-wrap leading-6 text-[#d8d9dc]">
-                            {caseItem.victim_names ??
-                              "Not listed"}
-                          </dd>
-                        </div>
-
-                        <div className="py-5">
-                          <dt className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#747b84]">
-                            Accused or convicted
-                          </dt>
-
-                          <dd className="mt-2 whitespace-pre-wrap leading-6 text-[#d8d9dc]">
-                            {caseItem.accused_names ??
-                              "Not listed"}
-                          </dd>
-                        </div>
-                      </dl>
-                    </div>
-                  </article>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="grid min-h-[45vh] place-items-center border border-white/10 bg-[#10151b] px-6 py-20 text-center">
-              <div className="max-w-2xl">
-                <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-[#e1c58f]">
-                  Archive preparation
-                </p>
-
-                <h2 className="mt-5 font-serif text-4xl font-medium md:text-6xl">
-                  The first case is being prepared
-                </h2>
-
-                <p className="mx-auto mt-6 max-w-xl text-base leading-8 text-[#a8adb5]">
-                  Published cases will appear here after their facts,
-                  media, and content warnings have been reviewed.
-                </p>
-              </div>
-            </div>
-          )}
+      <section className="px-5 py-10 md:px-10 lg:px-16 lg:py-14">
+  <div className="mx-auto max-w-[1500px]">
+    {publishedCases.length > 0 ? (
+      <div className="overflow-hidden border border-white/10">
+        {/* Desktop column headings */}
+        <div className="hidden grid-cols-[56px_minmax(260px,1.5fr)_minmax(170px,0.7fr)_minmax(150px,0.65fr)_120px_42px] items-center gap-5 border-b border-white/10 bg-[#0a0e13] px-5 py-3 text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#747b84] lg:grid">
+          <span>No.</span>
+          <span>Case</span>
+          <span>Location</span>
+          <span>Incident date</span>
+          <span>Files</span>
+          <span aria-hidden="true" />
         </div>
-      </section>
+
+        <div className="divide-y divide-white/10">
+          {publishedCases.map((caseItem, index) => {
+            const location = createLocation(
+              caseItem.location_city,
+              caseItem.location_state,
+              caseItem.location_country,
+            );
+
+            const recordingCount =
+              recordingCounts.get(caseItem.id) ?? 0;
+
+            const hasFeaturedVideo =
+              featuredVideoCases.has(caseItem.id);
+
+            return (
+              <Link
+                key={caseItem.id}
+                href={`/cases/${caseItem.slug}`}
+                className="group block bg-[#0d1218] px-5 py-5 transition hover:bg-[#121922] md:px-6"
+                aria-label={`Open ${caseItem.title}`}
+              >
+                <article className="grid gap-4 lg:grid-cols-[56px_minmax(260px,1.5fr)_minmax(170px,0.7fr)_minmax(150px,0.65fr)_120px_42px] lg:items-center lg:gap-5">
+                  <div className="hidden font-serif text-lg text-[#8d744b] lg:block">
+                    {String(index + 1).padStart(2, "0")}
+                  </div>
+
+                  <div className="min-w-0">
+                    <div className="mb-2 flex flex-wrap items-center gap-2">
+                      <span className="font-serif text-sm text-[#8d744b] lg:hidden">
+                        {String(index + 1).padStart(2, "0")}
+                      </span>
+
+                      {caseItem.is_featured ? (
+                        <span className="border border-[#c8a66a]/60 bg-[#c8a66a]/10 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-[0.1em] text-[#e1c58f]">
+                          Featured
+                        </span>
+                      ) : null}
+
+                      {hasFeaturedVideo ? (
+                        <span className="border border-white/10 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-[0.1em] text-[#9298a1]">
+                          Video
+                        </span>
+                      ) : null}
+                    </div>
+
+                    <h2 className="m-0 font-serif text-2xl font-medium leading-tight tracking-[-0.02em] transition group-hover:text-[#e1c58f] md:text-3xl">
+                      {caseItem.title}
+                    </h2>
+
+                    {caseItem.subtitle ? (
+                      <p className="mt-1 line-clamp-1 text-sm leading-6 text-[#a8adb5]">
+                        {caseItem.subtitle}
+                      </p>
+                    ) : caseItem.summary ? (
+                      <p className="mt-1 line-clamp-1 text-sm leading-6 text-[#8f959e]">
+                        {caseItem.summary}
+                      </p>
+                    ) : null}
+                  </div>
+
+                  <div className="text-sm leading-6 text-[#c8cbd0]">
+                    <span className="mb-1 block text-[9px] font-extrabold uppercase tracking-[0.12em] text-[#666d76] lg:hidden">
+                      Location
+                    </span>
+
+                    {location}
+                  </div>
+
+                  <div className="text-sm leading-6 text-[#c8cbd0]">
+                    <span className="mb-1 block text-[9px] font-extrabold uppercase tracking-[0.12em] text-[#666d76] lg:hidden">
+                      Incident date
+                    </span>
+
+                    {formatDate(caseItem.incident_date)}
+                  </div>
+
+                  <div>
+                    <span className="mb-1 block text-[9px] font-extrabold uppercase tracking-[0.12em] text-[#666d76] lg:hidden">
+                      Archive files
+                    </span>
+
+                    <span className="inline-flex items-center border border-white/10 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.1em] text-[#a8adb5]">
+                      {recordingCount}{" "}
+                      {recordingCount === 1 ? "file" : "files"}
+                    </span>
+                  </div>
+
+                  <div className="hidden justify-end text-xl text-[#c8a66a] transition-transform group-hover:translate-x-1 lg:flex">
+                    <span aria-hidden="true">→</span>
+                  </div>
+                </article>
+              </Link>
+            );
+          })}
+        </div>
+      </div>
+    ) : (
+      <div className="grid min-h-[40vh] place-items-center border border-white/10 bg-[#10151b] px-6 py-16 text-center">
+        <div className="max-w-2xl">
+          <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-[#e1c58f]">
+            Archive preparation
+          </p>
+
+          <h2 className="mt-5 font-serif text-4xl font-medium md:text-6xl">
+            The first case is being prepared
+          </h2>
+
+          <p className="mx-auto mt-6 max-w-xl text-base leading-8 text-[#a8adb5]">
+            Published cases will appear here after their facts,
+            media, and content warnings have been reviewed.
+          </p>
+        </div>
+      </div>
+    )}
+  </div>
+</section>
+           
+                     
+                        
+
+                      
+                            
+                        
+
+        
 
       <section className="border-t border-white/10 bg-[#0b0f14] px-5 py-16 md:px-10 lg:px-16">
         <div className="mx-auto grid max-w-[1500px] gap-8 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
