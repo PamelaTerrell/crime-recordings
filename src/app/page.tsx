@@ -504,7 +504,7 @@ export default async function Home() {
         </div>
       </section>
 
-      <footer className="site-footer">
+     <footer className="site-footer">
   <div className="footer-brand">
     <Image
       src="/crime-recordings-logo.png"
@@ -522,33 +522,41 @@ export default async function Home() {
       className="flex flex-wrap gap-x-6 gap-y-3"
       aria-label="Footer navigation"
     >
-      <Link href="/cases">
-        Cases
-      </Link>
-
-      <Link href="/membership">
-        Membership
-      </Link>
-
-      <Link href="/account">
-        My Account
-      </Link>
-
-      <Link href="/privacy">
-        Privacy
-      </Link>
-
-      <Link href="/terms">
-        Terms
-      </Link>
+      <Link href="/cases">Cases</Link>
+      <Link href="/membership">Membership</Link>
+      <Link href="/account">My Account</Link>
+      <Link href="/privacy">Privacy</Link>
+      <Link href="/terms">Terms</Link>
     </nav>
 
-    <p>
-      © {new Date().getFullYear()} Crime Recordings —
-      A Stabile USA Project
-    </p>
+    <div className="flex flex-col gap-2">
+      <p>
+        © {new Date().getFullYear()} Crime Recordings — A Stabile USA
+        Project
+      </p>
+
+      <p className="text-xs leading-6 text-[#747b84]">
+        Founded and developed by{" "}
+        <a
+          href="https://pamelajterrell.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[#c8a66a] transition hover:text-[#e1c58f]"
+        >
+          Pamela J. Stabile Terrell
+        </a>{" "}
+        and{" "}
+        <span className="text-[#c8a66a]">
+          Michael J. Stabile
+        </span>
+        .
+      </p>
+    </div>
   </div>
 </footer>
+
+  
+
     </main>
   );
 }
