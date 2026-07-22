@@ -37,48 +37,50 @@ const PLATFORM_FEATURES = [
 async function getHomepageFeaturedVideo() {
   const supabase = await createClient();
 
-  const { data: recording, error: recordingError } = await supabase
-    .from("recordings")
-    .select(
-      `
-        id,
-        case_id,
-        title,
-        mime_type,
-        access_level,
-        is_published,
-        is_featured
-      `,
-    )
-    .eq("is_published", true)
-    .eq("is_featured", true)
-    .eq("access_level", "public")
-    .like("mime_type", "video/%")
-    .limit(1)
-    .maybeSingle();
+  const { data: recording, error: recordingError } =
+    await supabase
+      .from("recordings")
+      .select(
+        `
+          id,
+          case_id,
+          title,
+          mime_type,
+          access_level,
+          is_published,
+          is_featured
+        `,
+      )
+      .eq("is_published", true)
+      .eq("is_featured", true)
+      .eq("access_level", "public")
+      .like("mime_type", "video/%")
+      .limit(1)
+      .maybeSingle();
 
   if (recordingError || !recording) {
     return null;
   }
 
-  const { data: caseItem, error: caseError } = await supabase
-    .from("cases")
-    .select(
-      `
-        id,
-        title,
-        slug,
-        summary,
-        incident_date,
-        location_city,
-        location_state,
-        location_country,
-        case_status
-      `,
-    )
-    .eq("id", recording.case_id)
-    .eq("case_status", "published")
-    .maybeSingle();
+  const { data: caseItem, error: caseError } =
+    await supabase
+      .from("cases")
+      .select(
+        `
+          id,
+          title,
+          slug,
+          summary,
+          incident_date,
+          location_city,
+          location_state,
+          location_country,
+          case_status
+        `,
+      )
+      .eq("id", recording.case_id)
+      .eq("case_status", "published")
+      .maybeSingle();
 
   if (caseError || !caseItem) {
     return null;
@@ -111,8 +113,11 @@ function formatDate(value: string | null) {
 export default async function Home() {
   const featuredResult = await getHomepageFeaturedVideo();
 
-  const featuredRecording = featuredResult?.recording ?? null;
-  const featuredCase = featuredResult?.caseItem ?? null;
+  const featuredRecording =
+    featuredResult?.recording ?? null;
+
+  const featuredCase =
+    featuredResult?.caseItem ?? null;
 
   const featuredLocation = featuredCase
     ? [
@@ -142,11 +147,27 @@ export default async function Home() {
           />
         </Link>
 
-        <nav className="site-nav" aria-label="Primary navigation">
+        <nav
+          className="site-nav"
+          aria-label="Primary navigation"
+        >
           <a href="#about">About</a>
-          <Link href="/cases">The Archive</Link>
-          <a href="#updates">Updates</a>
-          <Link href="/login">Sign In</Link>
+
+          <Link href="/cases">
+            The Archive
+          </Link>
+
+          <a href="#updates">
+            Updates
+          </a>
+
+          <Link href="/membership">
+            Join for $2.99
+          </Link>
+
+          <Link href="/account">
+            My Account
+          </Link>
         </nav>
       </header>
 
@@ -174,11 +195,15 @@ export default async function Home() {
 
                 <div className="border-l border-[#c8a66a]/40 pl-6 text-sm leading-7 text-[#a8adb5]">
                   <p className="m-0">
-                    {formatDate(featuredCase.incident_date)}
+                    {formatDate(
+                      featuredCase.incident_date,
+                    )}
                   </p>
 
                   {featuredLocation ? (
-                    <p className="m-0">{featuredLocation}</p>
+                    <p className="m-0">
+                      {featuredLocation}
+                    </p>
                   ) : null}
                 </div>
               </div>
@@ -187,8 +212,12 @@ export default async function Home() {
             <PublicMediaPlayer
               recordingId={featuredRecording.id}
               title={featuredRecording.title}
-              mimeType={featuredRecording.mime_type}
-              accessLevel={featuredRecording.access_level}
+              mimeType={
+                featuredRecording.mime_type
+              }
+              accessLevel={
+                featuredRecording.access_level
+              }
               featured
             />
 
@@ -198,21 +227,36 @@ export default async function Home() {
                   "Watch this featured public-record video and explore the complete documented case archive."}
               </p>
 
-              <Link
-                href={`/cases/${featuredCase.slug}`}
-                className="inline-flex min-h-14 items-center justify-center border border-[#c8a66a] bg-[#c8a66a] px-7 text-xs font-extrabold uppercase tracking-[0.1em] text-[#111318] transition hover:bg-[#e1c58f]"
-              >
-                View complete case
-                <span className="ml-4" aria-hidden="true">
-                  →
-                </span>
-              </Link>
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <Link
+                  href={`/cases/${featuredCase.slug}`}
+                  className="inline-flex min-h-14 items-center justify-center border border-[#c8a66a] bg-[#c8a66a] px-7 text-xs font-extrabold uppercase tracking-[0.1em] text-[#111318] transition hover:bg-[#e1c58f]"
+                >
+                  View complete case
+                  <span
+                    className="ml-4"
+                    aria-hidden="true"
+                  >
+                    →
+                  </span>
+                </Link>
+
+                <Link
+                  href="/membership"
+                  className="inline-flex min-h-14 items-center justify-center border border-[#c8a66a] px-7 text-xs font-extrabold uppercase tracking-[0.1em] text-[#e1c58f] transition hover:bg-[#c8a66a]/10"
+                >
+                  Join for $2.99/month
+                </Link>
+              </div>
             </div>
           </div>
         </section>
       ) : (
         <section className="hero" id="top">
-          <div className="hero-grid" aria-hidden="true" />
+          <div
+            className="hero-grid"
+            aria-hidden="true"
+          />
 
           <div className="hero-content">
             <p className="eyebrow">
@@ -225,21 +269,28 @@ export default async function Home() {
             </h1>
 
             <p className="hero-description">
-              Crime Recordings presents interviews, interrogations,
-              emergency calls, body-camera footage, dispatch audio,
-              and other official recordings obtained through
-              public-records requests.
+              Crime Recordings presents interviews,
+              interrogations, emergency calls, body-camera
+              footage, dispatch audio, and other official
+              recordings obtained through public-records
+              requests.
             </p>
 
             <div className="hero-actions">
-              <Link className="primary-button" href="/cases">
+              <Link
+                className="primary-button"
+                href="/cases"
+              >
                 Explore the archive
                 <span aria-hidden="true">→</span>
               </Link>
 
-              <a className="secondary-button" href="#about">
-                Learn about the archive
-              </a>
+              <Link
+                className="secondary-button"
+                href="/membership"
+              >
+                Join for $2.99
+              </Link>
             </div>
           </div>
 
@@ -252,17 +303,27 @@ export default async function Home() {
               <span>File 001</span>
             </div>
 
-            <div className="file-stamp">Original Record</div>
+            <div className="file-stamp">
+              Original Record
+            </div>
 
-            <div className="waveform" aria-hidden="true">
-              {Array.from({ length: 46 }, (_, index) => (
-                <span
-                  key={index}
-                  style={{
-                    height: `${18 + ((index * 19) % 68)}%`,
-                  }}
-                />
-              ))}
+            <div
+              className="waveform"
+              aria-hidden="true"
+            >
+              {Array.from(
+                { length: 46 },
+                (_, index) => (
+                  <span
+                    key={index}
+                    style={{
+                      height: `${
+                        18 + ((index * 19) % 68)
+                      }%`,
+                    }}
+                  />
+                ),
+              )}
             </div>
 
             <dl className="file-details">
@@ -288,39 +349,55 @@ export default async function Home() {
         </section>
       )}
 
-      <section className="statement-section" id="about">
-        <p className="section-label">Why Crime Recordings</p>
+      <section
+        className="statement-section"
+        id="about"
+      >
+        <p className="section-label">
+          Why Crime Recordings
+        </p>
 
         <div className="statement-layout">
-          <h2>The source material tells a story of its own.</h2>
+          <h2>
+            The source material tells a story of its own.
+          </h2>
 
           <div className="statement-copy">
             <p>
-              True-crime stories are often condensed into headlines,
-              summaries, and commentary. Crime Recordings takes viewers
-              and listeners closer to the original record.
+              True-crime stories are often condensed into
+              headlines, summaries, and commentary. Crime
+              Recordings takes viewers and listeners closer
+              to the original record.
             </p>
 
             <p>
-              Our goal is to present compelling source material with
-              context, careful organization, and respect for the people
-              connected to each case.
+              Our goal is to present compelling source
+              material with context, careful organization,
+              and respect for the people connected to each
+              case.
             </p>
           </div>
         </div>
       </section>
 
-      <section className="features-section" id="archive">
+      <section
+        className="features-section"
+        id="archive"
+      >
         <div className="section-heading">
           <div>
-            <p className="section-label">Inside the archive</p>
+            <p className="section-label">
+              Inside the archive
+            </p>
 
-            <h2>Real cases. Original recordings.</h2>
+            <h2>
+              Real cases. Original recordings.
+            </h2>
           </div>
 
           <p>
-            Built as a growing documentary archive rather than a
-            collection of disconnected clips.
+            Built as a growing documentary archive rather
+            than a collection of disconnected clips.
           </p>
         </div>
 
@@ -346,35 +423,84 @@ export default async function Home() {
         </div>
 
         <div className="mt-12">
-          <Link className="primary-button" href="/cases">
+          <Link
+            className="primary-button"
+            href="/cases"
+          >
             Browse published cases
             <span aria-hidden="true">→</span>
           </Link>
         </div>
       </section>
 
-      <section className="coming-soon-section" id="updates">
+      <section
+        className="coming-soon-section"
+        id="updates"
+      >
         <div>
-          <p className="section-label">The archive is open</p>
+          <p className="section-label">
+            The archive is open
+          </p>
 
-          <h2>Crime Recordings is actively growing.</h2>
+          <h2>
+            Crime Recordings is actively growing.
+          </h2>
         </div>
 
         <div className="coming-soon-copy">
           <p>
-            We are organizing additional official recordings,
-            supporting timelines, source details, and factual case
-            background.
+            We are organizing additional official
+            recordings, supporting timelines, source
+            details, and factual case background.
           </p>
 
           <p>
-            New public videos and complete case archives will be added
-            as the material is reviewed and prepared.
+            New public videos and complete case archives
+            will be added as the material is reviewed and
+            prepared.
           </p>
 
           <p className="launch-note">
             CrimeRecordings.com · Established 2026
           </p>
+        </div>
+      </section>
+
+      <section className="border-t border-white/10 bg-[#080b0f] px-5 py-20 text-[#f4f1e9] md:px-10 lg:px-16 lg:py-28">
+        <div className="mx-auto grid max-w-[1400px] gap-10 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+          <div>
+            <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-[#e1c58f]">
+              Crime Recordings membership
+            </p>
+
+            <h2 className="mt-5 max-w-4xl font-serif text-4xl font-medium leading-tight md:text-6xl">
+              Unlock the complete recordings behind the
+              cases.
+            </h2>
+
+            <p className="mt-6 max-w-3xl text-lg leading-8 text-[#a8adb5]">
+              Join for $2.99 per month to access
+              members-only interviews, interrogations,
+              emergency calls, audio, video, and extended
+              case media.
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-3 sm:flex-row lg:flex-col">
+            <Link
+              href="/membership"
+              className="inline-flex min-h-14 items-center justify-center border border-[#c8a66a] bg-[#c8a66a] px-8 text-xs font-extrabold uppercase tracking-[0.12em] text-[#111318] transition hover:bg-[#e1c58f]"
+            >
+              Become a member
+            </Link>
+
+            <Link
+              href="/account"
+              className="inline-flex min-h-14 items-center justify-center border border-[#c8a66a] px-8 text-xs font-extrabold uppercase tracking-[0.12em] text-[#e1c58f] transition hover:bg-[#c8a66a]/10"
+            >
+              My account
+            </Link>
+          </div>
         </div>
       </section>
 
@@ -392,8 +518,8 @@ export default async function Home() {
         </div>
 
         <p>
-          © {new Date().getFullYear()} Crime Recordings — A Stabile
-          USA Project
+          © {new Date().getFullYear()} Crime Recordings —
+          A Stabile USA Project
         </p>
       </footer>
     </main>
