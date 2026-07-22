@@ -68,12 +68,17 @@ export async function POST() {
       .select("stripe_customer_id")
       .eq("user_id", user.id)
       .not("stripe_customer_id", "is", null)
+      .order("created_at", {
+        ascending: false,
+      })
       .limit(1)
       .maybeSingle();
 
     const checkoutSession =
       await stripe.checkout.sessions.create({
         mode: "subscription",
+
+        payment_method_types: ["card"],
 
         line_items: [
           {
