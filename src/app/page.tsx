@@ -535,22 +535,9 @@ export default async function Home() {
         Project
       </p>
 
-      <p className="text-xs leading-6 text-[#747b84]">
-        Founded and developed by{" "}
-        <a
-          href="https://pamelajterrell.com"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-[#c8a66a] transition hover:text-[#e1c58f]"
-        >
-          Pamela J. Stabile Terrell
-        </a>{" "}
-        and{" "}
-        <span className="text-[#c8a66a]">
-          Michael J. Stabile
-        </span>
+      
         .
-      </p>
+    
     </div>
   </div>
 </footer>
