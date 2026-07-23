@@ -27,6 +27,8 @@ export default async function EditCasePage({
         summary,
         description,
         content_warning,
+        victim_names,
+        accused_names,
         location_city,
         location_state,
         location_country,
