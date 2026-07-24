@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import PublicMediaPlayer from "./public-media-player";
+import CaseImageGallery from "./case-image-gallery";
 
 type PublicCasePageProps = {
   params: Promise<{
@@ -255,7 +256,10 @@ export default async function PublicCasePage({
         )}
       </section>
 
-      <section className="px-5 py-20 md:px-10 lg:px-16 lg:py-28">
+      <section
+  id="case-overview"
+  className="px-5 py-20 md:px-10 lg:px-16 lg:py-28"
+>
         <div className="mx-auto grid max-w-[1500px] gap-14 lg:grid-cols-[minmax(0,0.72fr)_minmax(0,1.28fr)] lg:gap-24">
           <aside>
             <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-[#e1c58f]">
@@ -341,6 +345,8 @@ export default async function PublicCasePage({
           </article>
         </div>
       </section>
+
+            <CaseImageGallery caseId={caseItem.id} />
 
       <section className="border-t border-white/10 bg-[#0b0f14] px-5 py-20 md:px-10 lg:px-16 lg:py-28">
         <div className="mx-auto max-w-[1500px]">
