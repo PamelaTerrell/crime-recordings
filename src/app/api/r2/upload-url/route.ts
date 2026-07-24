@@ -23,7 +23,16 @@ const allowedMediaTypes = new Set([
   "video/quicktime",
   "video/webm",
   "video/x-m4v",
+
+  // Images
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+  "image/avif",
 ]);
+
+type UploadCategory = "recordings" | "images";
 
 function sanitizeFilename(filename: string) {
   const extension = filename.includes(".")
@@ -38,7 +47,32 @@ function sanitizeFilename(filename: string) {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
 
-  return `${nameWithoutExtension || "audio-recording"}${extension}`;
+  return `${nameWithoutExtension || "case-file"}${extension}`;
+}
+
+function determineUploadCategory(
+  contentType: string,
+  requestedCategory: unknown,
+): UploadCategory | null {
+  if (
+    requestedCategory === "recordings" ||
+    requestedCategory === "images"
+  ) {
+    return requestedCategory;
+  }
+
+  if (
+    contentType.startsWith("audio/") ||
+    contentType.startsWith("video/")
+  ) {
+    return "recordings";
+  }
+
+  if (contentType.startsWith("image/")) {
+    return "images";
+  }
+
+  return null;
 }
 
 export async function POST(request: Request) {
@@ -65,7 +99,9 @@ export async function POST(request: Request) {
 
     if (roleError) {
       return NextResponse.json(
-        { error: `Unable to verify account role: ${roleError.message}` },
+        {
+          error: `Unable to verify account role: ${roleError.message}`,
+        },
         { status: 500 },
       );
     }
@@ -75,7 +111,9 @@ export async function POST(request: Request) {
       roleRecord?.role !== "editor"
     ) {
       return NextResponse.json(
-        { error: "You do not have permission to upload recordings." },
+        {
+          error: "You do not have permission to upload case files.",
+        },
         { status: 403 },
       );
     }
@@ -83,15 +121,24 @@ export async function POST(request: Request) {
     const body = await request.json();
 
     const caseId =
-      typeof body.caseId === "string" ? body.caseId.trim() : "";
+      typeof body.caseId === "string"
+        ? body.caseId.trim()
+        : "";
 
     const filename =
-      typeof body.filename === "string" ? body.filename.trim() : "";
+      typeof body.filename === "string"
+        ? body.filename.trim()
+        : "";
 
     const contentType =
       typeof body.contentType === "string"
         ? body.contentType.trim().toLowerCase()
         : "";
+
+    const uploadCategory = determineUploadCategory(
+      contentType,
+      body.uploadCategory,
+    );
 
     if (!caseId) {
       return NextResponse.json(
@@ -108,14 +155,52 @@ export async function POST(request: Request) {
     }
 
     if (!allowedMediaTypes.has(contentType)) {
-  return NextResponse.json(
-    {
-      error:
-        "Please select a supported audio or video file such as MP3, M4A, WAV, MP4, MOV, M4V, or WebM.",
-    },
-    { status: 400 },
-  );
-}
+      return NextResponse.json(
+        {
+          error:
+            "Please select a supported audio, video, or image file.",
+        },
+        { status: 400 },
+      );
+    }
+
+    if (!uploadCategory) {
+      return NextResponse.json(
+        {
+          error: "The upload category could not be determined.",
+        },
+        { status: 400 },
+      );
+    }
+
+    if (
+      uploadCategory === "recordings" &&
+      !(
+        contentType.startsWith("audio/") ||
+        contentType.startsWith("video/")
+      )
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Only audio or video files can be uploaded as recordings.",
+        },
+        { status: 400 },
+      );
+    }
+
+    if (
+      uploadCategory === "images" &&
+      !contentType.startsWith("image/")
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Only image files can be uploaded as case images.",
+        },
+        { status: 400 },
+      );
+    }
 
     const { data: caseRecord, error: caseError } = await supabase
       .from("cases")
@@ -132,13 +217,18 @@ export async function POST(request: Request) {
 
     if (!caseRecord) {
       return NextResponse.json(
-        { error: "The selected case could not be found." },
+        {
+          error: "The selected case could not be found.",
+        },
         { status: 404 },
       );
     }
 
     const safeFilename = sanitizeFilename(filename);
-    const objectKey = `cases/${caseId}/recordings/${crypto.randomUUID()}-${safeFilename}`;
+
+    const objectKey =
+      `cases/${caseId}/${uploadCategory}/` +
+      `${crypto.randomUUID()}-${safeFilename}`;
 
     const command = new PutObjectCommand({
       Bucket: r2BucketName,
@@ -155,6 +245,7 @@ export async function POST(request: Request) {
       objectKey,
       originalFilename: filename,
       contentType,
+      uploadCategory,
     });
   } catch (error) {
     console.error("Unable to create R2 upload URL:", error);
