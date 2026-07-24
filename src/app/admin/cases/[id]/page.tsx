@@ -112,6 +112,13 @@ export default async function AdminCasePage({
           </Link>
 
           <Link
+  href={`/admin/cases/${caseItem.id}/images/new`}
+  className="admin-primary-link"
+>
+  Add images
+</Link>
+
+          <Link
             href={`/admin/cases/${caseItem.id}/edit`}
             className="admin-primary-link"
           >
