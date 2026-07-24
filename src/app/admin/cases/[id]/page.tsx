@@ -2,7 +2,24 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import CaseDangerActions from "./case-danger-actions";
+import CaseImageDeleteButton from "./case-image-delete-button";
 import RecordingPlayer from "./recording-player";
+
+function formatFileSize(bytes: number | null) {
+  if (bytes === null) {
+    return null;
+  }
+
+  if (bytes < 1024 * 1024) {
+    return `${(bytes / 1024).toFixed(1)} KB`;
+  }
+
+  if (bytes < 1024 * 1024 * 1024) {
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
+
+  return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+}
 
 export default async function AdminCasePage({
   params,
@@ -73,6 +90,40 @@ export default async function AdminCasePage({
     );
   }
 
+  const { data: caseImages, error: caseImagesError } = await supabase
+    .from("case_images")
+    .select(
+      `
+        id,
+        title,
+        caption,
+        source_name,
+        source_reference,
+        image_date,
+        original_filename,
+        mime_type,
+        file_size_bytes,
+        access_level,
+        is_published,
+        is_disturbing,
+        sort_order,
+        created_at
+      `,
+    )
+    .eq("case_id", caseItem.id)
+    .order("sort_order", {
+      ascending: true,
+    })
+    .order("created_at", {
+      ascending: true,
+    });
+
+  if (caseImagesError) {
+    throw new Error(
+      `Unable to load case images: ${caseImagesError.message}`,
+    );
+  }
+
   const location =
     [
       caseItem.location_city,
@@ -112,11 +163,11 @@ export default async function AdminCasePage({
           </Link>
 
           <Link
-  href={`/admin/cases/${caseItem.id}/images/new`}
-  className="admin-primary-link"
->
-  Add images
-</Link>
+            href={`/admin/cases/${caseItem.id}/images/new`}
+            className="admin-primary-link"
+          >
+            Add images
+          </Link>
 
           <Link
             href={`/admin/cases/${caseItem.id}/edit`}
@@ -243,6 +294,129 @@ export default async function AdminCasePage({
         )}
       </section>
 
+      <section className="mt-9">
+        <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+          <div>
+            <p className="admin-eyebrow">Case records</p>
+
+            <h2 className="m-0 font-serif text-4xl font-medium text-[#f4f1e9] md:text-5xl">
+              Case images
+            </h2>
+
+            <p className="mt-4 max-w-2xl leading-7 text-[#a8adb5]">
+              Upload and manage photographs, documents, and other
+              case-related images. These can be published publicly or
+              reserved for members.
+            </p>
+          </div>
+
+          <Link
+            href={`/admin/cases/${caseItem.id}/images/new`}
+            className="admin-primary-link"
+          >
+            Add images
+          </Link>
+        </div>
+
+        {caseImages && caseImages.length > 0 ? (
+          <div className="grid gap-4">
+            {caseImages.map((image) => (
+              <article
+                key={image.id}
+                className="border border-white/10 bg-[#10151b] p-6 md:p-8"
+              >
+                <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+                  <div className="min-w-0">
+                    <div className="mb-3 flex flex-wrap gap-2">
+                      <span className="border border-[#c8a66a]/40 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#e1c58f]">
+                        Case image
+                      </span>
+
+                      <span className="border border-white/10 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#a8adb5]">
+                        {image.access_level === "public"
+                          ? "Public"
+                          : "Members only"}
+                      </span>
+
+                      <span className="border border-white/10 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#a8adb5]">
+                        {image.is_published ? "Published" : "Draft"}
+                      </span>
+
+                      {image.is_disturbing ? (
+                        <span className="border border-red-400/30 bg-red-400/10 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.12em] text-red-200">
+                          Sensitive
+                        </span>
+                      ) : null}
+                    </div>
+
+                    <h3 className="m-0 font-serif text-3xl font-medium text-[#f4f1e9]">
+                      {image.title}
+                    </h3>
+
+                    <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm text-[#a8adb5]">
+                      {image.original_filename ? (
+                        <span>{image.original_filename}</span>
+                      ) : null}
+
+                      {formatFileSize(image.file_size_bytes) ? (
+                        <span>{formatFileSize(image.file_size_bytes)}</span>
+                      ) : null}
+
+                      <span>Order {image.sort_order}</span>
+
+                      {image.image_date ? (
+                        <span>{image.image_date}</span>
+                      ) : null}
+                    </div>
+
+                    {image.caption ? (
+                      <p className="mt-4 max-w-3xl leading-7 text-[#c8cbd0]">
+                        {image.caption}
+                      </p>
+                    ) : null}
+
+                    {(image.source_name || image.source_reference) ? (
+                      <div className="mt-4 text-sm leading-6 text-[#a8adb5]">
+                        {image.source_name ? (
+                          <p>
+                            <strong className="text-[#d8d9dc]">
+                              Source:
+                            </strong>{" "}
+                            {image.source_name}
+                          </p>
+                        ) : null}
+
+                        {image.source_reference ? (
+                          <p>
+                            <strong className="text-[#d8d9dc]">
+                              Reference:
+                            </strong>{" "}
+                            {image.source_reference}
+                          </p>
+                        ) : null}
+                      </div>
+                    ) : null}
+                  </div>
+
+                  <div className="shrink-0">
+                    <CaseImageDeleteButton
+                      imageId={image.id}
+                      imageTitle={image.title}
+                    />
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <div className="border border-white/10 bg-[#10151b] p-7">
+            <p className="m-0 text-[#a8adb5]">
+              No case images have been added yet.
+            </p>
+          </div>
+        )}
+      </section>
+
       <div className="admin-coming-next">
         <p className="admin-eyebrow">Next stage</p>
 
@@ -250,10 +424,10 @@ export default async function AdminCasePage({
 
         <p>
           This case now supports secure audio and video uploads,
-          private administrative playback, recording editing,
+          case-image uploads, private administrative management,
           publishing controls, sorting, and deletion. Future tools
-          can add transcripts, chapter markers, source agencies, and
-          member-facing playback.
+          can add image editing, warning-gated member galleries,
+          transcripts, chapter markers, and source-agency linking.
         </p>
       </div>
 
