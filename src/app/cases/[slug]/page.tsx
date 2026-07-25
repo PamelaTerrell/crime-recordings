@@ -155,21 +155,9 @@ export default async function PublicCasePage({
 
   const { caseItem, recordings } = result;
 
-  const featuredRecording =
-    recordings.find(
-      (recording) =>
-        recording.is_featured &&
-        recording.mime_type?.startsWith("video/"),
-    ) ?? null;
-
-  const remainingRecordings = recordings.filter(
-    (recording) =>
-      recording.id !== featuredRecording?.id,
-  );
-
   const memberRecordings = recordings.filter(
-  (recording) => recording.access_level === "member",
-);
+    (recording) => recording.access_level === "member",
+  );
 
   const location =
     [
@@ -226,6 +214,7 @@ export default async function PublicCasePage({
           <div className="mt-9 flex flex-wrap gap-x-8 gap-y-3 border-t border-white/10 pt-6 text-sm text-[#a8adb5]">
             <span>{formatDate(caseItem.incident_date)}</span>
             <span>{location}</span>
+
             <span>
               {recordings.length} published{" "}
               {recordings.length === 1
@@ -236,34 +225,10 @@ export default async function PublicCasePage({
         </div>
       </section>
 
-      <section className="mx-auto max-w-[1600px] px-0 md:px-6">
-        {featuredRecording ? (
-          <PublicMediaPlayer
-            recordingId={featuredRecording.id}
-            title={featuredRecording.title}
-            mimeType={featuredRecording.mime_type}
-            accessLevel={featuredRecording.access_level}
-            featured
-          />
-        ) : (
-          <div className="grid min-h-[55vh] place-items-center border-y border-white/10 bg-[#10151b] px-6 text-center">
-            <div>
-              <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-[#e1c58f]">
-                Case media
-              </p>
-
-              <h2 className="mt-5 font-serif text-4xl font-medium md:text-6xl">
-                Featured video coming soon
-              </h2>
-            </div>
-          </div>
-        )}
-      </section>
-
       <section
-  id="case-overview"
-  className="px-5 py-20 md:px-10 lg:px-16 lg:py-28"
->
+        id="case-overview"
+        className="px-5 py-20 md:px-10 lg:px-16 lg:py-28"
+      >
         <div className="mx-auto grid max-w-[1500px] gap-14 lg:grid-cols-[minmax(0,0.72fr)_minmax(0,1.28fr)] lg:gap-24">
           <aside>
             <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-[#e1c58f]">
@@ -350,7 +315,7 @@ export default async function PublicCasePage({
         </div>
       </section>
 
-      
+      <CaseImageGallery caseId={caseItem.id} />
 
       <section className="border-t border-white/10 bg-[#0b0f14] px-5 py-20 md:px-10 lg:px-16 lg:py-28">
         <div className="mx-auto max-w-[1500px]">
@@ -363,96 +328,86 @@ export default async function PublicCasePage({
           </h2>
 
           {memberRecordings.length > 0 ? (
-  <div className="mt-10 border border-[#c8a66a]/40 bg-[#c8a66a]/5 p-7 md:p-9">
-    <p className="m-0 text-xs font-extrabold uppercase tracking-[0.16em] text-[#e1c58f]">
-      Continue the archive
-    </p>
+            <div className="mt-8 max-w-4xl border-l border-[#c8a66a] pl-5">
+              <p className="text-base leading-7 text-[#b8bcc2]">
+                The first recording in this case is available
+                publicly. Additional recordings are available
+                with a Crime Recordings membership.
+              </p>
 
-    <h3 className="mt-4 max-w-3xl font-serif text-3xl font-medium leading-tight text-[#f4f1e9] md:text-4xl">
-      Additional case recordings are available to members.
-    </h3>
+              <div className="mt-4 flex flex-wrap gap-4 text-xs font-extrabold uppercase tracking-[0.1em]">
+                <Link
+                  href="/membership"
+                  className="text-[#e1c58f] transition hover:text-[#f4f1e9]"
+                >
+                  View membership →
+                </Link>
 
-    <p className="mt-4 max-w-3xl text-base leading-7 text-[#b8bcc2]">
-      The first recording in this case is available publicly.
-      Crime Recordings members can access the remaining published
-      audio, video, images, and other members-only case material.
-    </p>
+                <Link
+                  href="/login"
+                  className="text-[#a8adb5] transition hover:text-[#f4f1e9]"
+                >
+                  Member sign in →
+                </Link>
+              </div>
+            </div>
+          ) : null}
 
-    <div className="mt-7 flex flex-wrap gap-3">
-      <Link
-        href="/membership"
-        className="inline-flex min-h-12 items-center justify-center border border-[#c8a66a] bg-[#c8a66a] px-5 text-xs font-extrabold uppercase tracking-[0.1em] text-[#111318] transition hover:bg-[#e1c58f]"
-      >
-        View membership
-      </Link>
-
-      <Link
-        href="/login"
-        className="inline-flex min-h-12 items-center justify-center border border-white/15 px-5 text-xs font-extrabold uppercase tracking-[0.1em] text-[#d8d9dc] transition hover:border-white/30 hover:text-white"
-      >
-        Member sign in
-      </Link>
-    </div>
-  </div>
-) : null}
-
-          {remainingRecordings.length > 0 ? (
+          {recordings.length > 0 ? (
             <div className="mt-12 grid gap-8">
-              {remainingRecordings.map(
-                (recording, index) => (
-                  <article
-                    key={recording.id}
-                    className="grid gap-6 border-t border-white/10 pt-8 lg:grid-cols-[120px_minmax(0,1fr)]"
-                  >
-                    <div className="font-serif text-3xl text-[#c8a66a]">
-                      {String(index + 1).padStart(2, "0")}
+              {recordings.map((recording, index) => (
+                <article
+                  key={recording.id}
+                  className="grid gap-6 border-t border-white/10 pt-8 lg:grid-cols-[120px_minmax(0,1fr)]"
+                >
+                  <div className="font-serif text-3xl text-[#c8a66a]">
+                    {String(index + 1).padStart(2, "0")}
+                  </div>
+
+                  <div>
+                    <div className="mb-4 flex flex-wrap gap-2">
+                      <span className="border border-[#c8a66a]/40 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#e1c58f]">
+                        {formatRecordingType(
+                          recording.recording_type,
+                        )}
+                      </span>
+
+                      <span className="border border-white/10 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#a8adb5]">
+                        {recording.mime_type?.startsWith(
+                          "video/",
+                        )
+                          ? "Video"
+                          : "Audio"}
+                      </span>
+
+                      <span className="border border-white/10 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#a8adb5]">
+                        {recording.access_level === "public"
+                          ? "Public"
+                          : "Members only"}
+                      </span>
                     </div>
 
-                    <div>
-                      <div className="mb-4 flex flex-wrap gap-2">
-                        <span className="border border-[#c8a66a]/40 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#e1c58f]">
-                          {formatRecordingType(
-                            recording.recording_type,
-                          )}
-                        </span>
+                    <h3 className="m-0 font-serif text-3xl font-medium md:text-4xl">
+                      {recording.title}
+                    </h3>
 
-                        <span className="border border-white/10 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#a8adb5]">
-                          {recording.mime_type?.startsWith(
-                            "video/",
-                          )
-                            ? "Video"
-                            : "Audio"}
-                        </span>
-
-                        <span className="border border-white/10 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#a8adb5]">
-                          {recording.access_level === "public"
-                            ? "Public"
-                            : "Members only"}
-                        </span>
-                      </div>
-
-                      <h3 className="m-0 font-serif text-3xl font-medium md:text-4xl">
-                        {recording.title}
-                      </h3>
-
-                      <div className="mt-6">
-                        <PublicMediaPlayer
-                          recordingId={recording.id}
-                          title={recording.title}
-                          mimeType={recording.mime_type}
-                          accessLevel={
-                            recording.access_level
-                          }
-                        />
-                      </div>
+                    <div className="mt-6">
+                      <PublicMediaPlayer
+                        recordingId={recording.id}
+                        title={recording.title}
+                        mimeType={recording.mime_type}
+                        accessLevel={
+                          recording.access_level
+                        }
+                      />
                     </div>
-                  </article>
-                ),
-              )}
+                  </div>
+                </article>
+              ))}
             </div>
           ) : (
             <p className="mt-10 text-lg text-[#a8adb5]">
-              No additional recordings have been published.
+              No recordings have been published.
             </p>
           )}
         </div>
