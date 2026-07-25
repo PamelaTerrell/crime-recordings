@@ -167,6 +167,10 @@ export default async function PublicCasePage({
       recording.id !== featuredRecording?.id,
   );
 
+  const memberRecordings = recordings.filter(
+  (recording) => recording.access_level === "member",
+);
+
   const location =
     [
       caseItem.location_city,
@@ -346,7 +350,7 @@ export default async function PublicCasePage({
         </div>
       </section>
 
-            <CaseImageGallery caseId={caseItem.id} />
+      
 
       <section className="border-t border-white/10 bg-[#0b0f14] px-5 py-20 md:px-10 lg:px-16 lg:py-28">
         <div className="mx-auto max-w-[1500px]">
@@ -357,6 +361,40 @@ export default async function PublicCasePage({
           <h2 className="mt-5 font-serif text-5xl font-medium md:text-7xl">
             Case recordings
           </h2>
+
+          {memberRecordings.length > 0 ? (
+  <div className="mt-10 border border-[#c8a66a]/40 bg-[#c8a66a]/5 p-7 md:p-9">
+    <p className="m-0 text-xs font-extrabold uppercase tracking-[0.16em] text-[#e1c58f]">
+      Continue the archive
+    </p>
+
+    <h3 className="mt-4 max-w-3xl font-serif text-3xl font-medium leading-tight text-[#f4f1e9] md:text-4xl">
+      Additional case recordings are available to members.
+    </h3>
+
+    <p className="mt-4 max-w-3xl text-base leading-7 text-[#b8bcc2]">
+      The first recording in this case is available publicly.
+      Crime Recordings members can access the remaining published
+      audio, video, images, and other members-only case material.
+    </p>
+
+    <div className="mt-7 flex flex-wrap gap-3">
+      <Link
+        href="/membership"
+        className="inline-flex min-h-12 items-center justify-center border border-[#c8a66a] bg-[#c8a66a] px-5 text-xs font-extrabold uppercase tracking-[0.1em] text-[#111318] transition hover:bg-[#e1c58f]"
+      >
+        View membership
+      </Link>
+
+      <Link
+        href="/login"
+        className="inline-flex min-h-12 items-center justify-center border border-white/15 px-5 text-xs font-extrabold uppercase tracking-[0.1em] text-[#d8d9dc] transition hover:border-white/30 hover:text-white"
+      >
+        Member sign in
+      </Link>
+    </div>
+  </div>
+) : null}
 
           {remainingRecordings.length > 0 ? (
             <div className="mt-12 grid gap-8">
