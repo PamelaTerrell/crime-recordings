@@ -139,6 +139,10 @@ export default function AudioUploadForm({
   const [title, setTitle] = useState("");
   const [recordingType, setRecordingType] =
     useState("interview");
+  const [fileSummary, setFileSummary] = useState("");
+  const [thumbnailUrl, setThumbnailUrl] = useState("");
+  const [durationSeconds, setDurationSeconds] =
+    useState("");
   const [accessLevel, setAccessLevel] =
     useState<"public" | "member">("member");
   const [isPublished, setIsPublished] = useState(false);
@@ -155,7 +159,9 @@ export default function AudioUploadForm({
       return "";
     }
 
-    return `${mediaFile.name} · ${formatFileSize(mediaFile.size)}`;
+    return `${mediaFile.name} · ${formatFileSize(
+      mediaFile.size,
+    )}`;
   }, [mediaFile]);
 
   function handleFileChange(
@@ -198,10 +204,8 @@ export default function AudioUploadForm({
     setMediaFile(selectedFile);
 
     if (!title.trim()) {
-      const filenameWithoutExtension = selectedFile.name.replace(
-        /\.[^/.]+$/,
-        "",
-      );
+      const filenameWithoutExtension =
+        selectedFile.name.replace(/\.[^/.]+$/, "");
 
       setTitle(filenameWithoutExtension);
     }
@@ -231,6 +235,22 @@ export default function AudioUploadForm({
     if (!contentType) {
       setError("The selected file type is not supported.");
       return;
+    }
+
+    let parsedDurationSeconds: number | null = null;
+
+    if (durationSeconds.trim()) {
+      parsedDurationSeconds = Number(durationSeconds);
+
+      if (
+        !Number.isInteger(parsedDurationSeconds) ||
+        parsedDurationSeconds < 0
+      ) {
+        setError(
+          "Duration must be entered as a whole number of seconds.",
+        );
+        return;
+      }
     }
 
     setPending(true);
@@ -289,6 +309,9 @@ export default function AudioUploadForm({
           caseId,
           title: title.trim(),
           recordingType,
+          fileSummary: fileSummary.trim(),
+          thumbnailUrl: thumbnailUrl.trim(),
+          durationSeconds: parsedDurationSeconds,
           accessLevel,
           isPublished,
           objectKey: uploadUrlData.objectKey,
@@ -345,6 +368,11 @@ export default function AudioUploadForm({
           <h2 className="font-serif text-3xl font-medium text-[#f4f1e9] md:text-4xl">
             Identify the recording
           </h2>
+
+          <p className="mt-4 max-w-3xl leading-7 text-[#a8adb5]">
+            Add enough context for visitors to understand what
+            the file contains before opening or playing it.
+          </p>
         </div>
 
         <div className="grid gap-6 md:grid-cols-2">
@@ -410,6 +438,76 @@ export default function AudioUploadForm({
               <option value="member">Members only</option>
               <option value="public">Public</option>
             </select>
+          </label>
+
+          <label className="grid gap-2 md:col-span-2">
+            <span className="text-xs font-extrabold uppercase tracking-[0.13em] text-[#d8d9dc]">
+              File summary
+            </span>
+
+            <textarea
+              value={fileSummary}
+              onChange={(event) =>
+                setFileSummary(event.target.value)
+              }
+              disabled={pending}
+              rows={4}
+              placeholder="Example: Michael Bargo speaks with investigators during the initial police interview."
+              className="w-full resize-y border border-white/10 bg-[#080b0f] px-4 py-4 text-[#f4f1e9] outline-none transition focus:border-[#c8a66a] focus:ring-4 focus:ring-[#c8a66a]/10"
+            />
+
+            <small className="leading-6 text-[#747b84]">
+              This will appear beneath the title to explain what
+              the recording contains.
+            </small>
+          </label>
+
+          <label className="grid gap-2 md:col-span-2">
+            <span className="text-xs font-extrabold uppercase tracking-[0.13em] text-[#d8d9dc]">
+              Thumbnail URL
+            </span>
+
+            <input
+              type="url"
+              value={thumbnailUrl}
+              onChange={(event) =>
+                setThumbnailUrl(event.target.value)
+              }
+              disabled={pending}
+              placeholder="https://example.com/recording-thumbnail.jpg"
+              className="min-h-14 w-full border border-white/10 bg-[#080b0f] px-4 text-[#f4f1e9] outline-none transition focus:border-[#c8a66a] focus:ring-4 focus:ring-[#c8a66a]/10"
+            />
+
+            <small className="leading-6 text-[#747b84]">
+              Optional. Enter the complete public URL for a
+              thumbnail image. We can add direct thumbnail
+              uploading later.
+            </small>
+          </label>
+
+          <label className="grid gap-2">
+            <span className="text-xs font-extrabold uppercase tracking-[0.13em] text-[#d8d9dc]">
+              Duration in seconds
+            </span>
+
+            <input
+              type="number"
+              min="0"
+              step="1"
+              inputMode="numeric"
+              value={durationSeconds}
+              onChange={(event) =>
+                setDurationSeconds(event.target.value)
+              }
+              disabled={pending}
+              placeholder="Example: 3842"
+              className="min-h-14 w-full border border-white/10 bg-[#080b0f] px-4 text-[#f4f1e9] outline-none transition focus:border-[#c8a66a] focus:ring-4 focus:ring-[#c8a66a]/10"
+            />
+
+            <small className="leading-6 text-[#747b84]">
+              Optional. Enter the total length as a whole number
+              of seconds.
+            </small>
           </label>
         </div>
       </section>

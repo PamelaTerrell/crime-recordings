@@ -51,7 +51,9 @@ export async function POST(request: Request) {
 
     if (roleError) {
       return NextResponse.json(
-        { error: `Unable to verify account role: ${roleError.message}` },
+        {
+          error: `Unable to verify account role: ${roleError.message}`,
+        },
         { status: 500 },
       );
     }
@@ -69,15 +71,36 @@ export async function POST(request: Request) {
     const body = await request.json();
 
     const caseId =
-      typeof body.caseId === "string" ? body.caseId.trim() : "";
+      typeof body.caseId === "string"
+        ? body.caseId.trim()
+        : "";
 
     const title =
-      typeof body.title === "string" ? body.title.trim() : "";
+      typeof body.title === "string"
+        ? body.title.trim()
+        : "";
 
     const recordingType =
       typeof body.recordingType === "string"
         ? body.recordingType.trim()
         : "";
+
+    const fileSummary =
+      typeof body.fileSummary === "string"
+        ? body.fileSummary.trim()
+        : "";
+
+    const thumbnailUrl =
+      typeof body.thumbnailUrl === "string"
+        ? body.thumbnailUrl.trim()
+        : "";
+
+    const durationSeconds =
+      typeof body.durationSeconds === "number" &&
+      Number.isInteger(body.durationSeconds) &&
+      body.durationSeconds >= 0
+        ? body.durationSeconds
+        : null;
 
     const accessLevel =
       typeof body.accessLevel === "string"
@@ -85,7 +108,9 @@ export async function POST(request: Request) {
         : "";
 
     const objectKey =
-      typeof body.objectKey === "string" ? body.objectKey.trim() : "";
+      typeof body.objectKey === "string"
+        ? body.objectKey.trim()
+        : "";
 
     const originalFilename =
       typeof body.originalFilename === "string"
@@ -93,7 +118,9 @@ export async function POST(request: Request) {
         : "";
 
     const mimeType =
-      typeof body.mimeType === "string" ? body.mimeType.trim() : "";
+      typeof body.mimeType === "string"
+        ? body.mimeType.trim()
+        : "";
 
     const fileSizeBytes =
       typeof body.fileSizeBytes === "number"
@@ -132,9 +159,30 @@ export async function POST(request: Request) {
 
     if (!objectKey) {
       return NextResponse.json(
-        { error: "The uploaded audio object key is missing." },
+        { error: "The uploaded media object key is missing." },
         { status: 400 },
       );
+    }
+
+    if (thumbnailUrl) {
+      try {
+        const parsedThumbnailUrl = new URL(thumbnailUrl);
+
+        if (
+          parsedThumbnailUrl.protocol !== "https:" &&
+          parsedThumbnailUrl.protocol !== "http:"
+        ) {
+          throw new Error("Unsupported protocol");
+        }
+      } catch {
+        return NextResponse.json(
+          {
+            error:
+              "Please enter a complete thumbnail URL beginning with http:// or https://.",
+          },
+          { status: 400 },
+        );
+      }
     }
 
     const expectedPrefix = `cases/${caseId}/recordings/`;
@@ -170,14 +218,15 @@ export async function POST(request: Request) {
       );
     }
 
-    const baseSlug = createSlug(title) || "audio-recording";
+    const baseSlug = createSlug(title) || "media-recording";
 
-    const { data: matchingRecording, error: slugError } = await supabase
-      .from("recordings")
-      .select("id")
-      .eq("case_id", caseId)
-      .eq("slug", baseSlug)
-      .maybeSingle();
+    const { data: matchingRecording, error: slugError } =
+      await supabase
+        .from("recordings")
+        .select("id")
+        .eq("case_id", caseId)
+        .eq("slug", baseSlug)
+        .maybeSingle();
 
     if (slugError) {
       await removeUploadedObject(objectKey);
@@ -196,25 +245,29 @@ export async function POST(request: Request) {
       ? new Date().toISOString()
       : null;
 
-    const { data: recording, error: insertError } = await supabase
-      .from("recordings")
-      .insert({
-        case_id: caseId,
-        slug,
-        title,
-        recording_type: recordingType,
-        access_level: accessLevel,
-        full_object_key: objectKey,
-        original_filename: originalFilename || null,
-        mime_type: mimeType || null,
-        file_size_bytes: fileSizeBytes,
-        is_published: isPublished,
-        published_at: publishedAt,
-        created_by: user.id,
-        updated_by: user.id,
-      })
-      .select("id")
-      .single();
+    const { data: recording, error: insertError } =
+      await supabase
+        .from("recordings")
+        .insert({
+          case_id: caseId,
+          slug,
+          title,
+          recording_type: recordingType,
+          file_summary: fileSummary || null,
+          thumbnail_url: thumbnailUrl || null,
+          duration_seconds: durationSeconds,
+          access_level: accessLevel,
+          full_object_key: objectKey,
+          original_filename: originalFilename || null,
+          mime_type: mimeType || null,
+          file_size_bytes: fileSizeBytes,
+          is_published: isPublished,
+          published_at: publishedAt,
+          created_by: user.id,
+          updated_by: user.id,
+        })
+        .select("id")
+        .single();
 
     if (insertError || !recording) {
       await removeUploadedObject(objectKey);
