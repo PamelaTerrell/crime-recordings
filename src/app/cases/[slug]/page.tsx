@@ -457,8 +457,8 @@ export default async function PublicCasePage({
                       <div
                         className={`grid gap-6 ${
                           recording.thumbnail_url
-                            ? "md:grid-cols-[220px_minmax(0,1fr)] lg:grid-cols-[260px_minmax(0,1fr)]"
-                            : ""
+  ? "md:grid-cols-[325px_minmax(0,1fr)]"
+  : ""
                         }`}
                       >
                         {recording.thumbnail_url ? (
@@ -468,7 +468,7 @@ export default async function PublicCasePage({
                                 recording.thumbnail_url
                               }
                               alt={`Thumbnail for ${recording.title}`}
-                              className="aspect-video h-auto w-full object-cover"
+                              className="aspect-video h-auto w-full object-center"
                             />
                           </div>
                         ) : null}
