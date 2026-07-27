@@ -42,39 +42,51 @@ a {
 }
 
 .site-header {
-  position: absolute;
+  position: relative;
   z-index: 20;
-  top: 0;
-  left: 0;
   display: flex;
   width: 100%;
   align-items: center;
-  justify-content: space-between;
-  padding: 24px clamp(24px, 6vw, 92px);
+  flex-direction: column;
+  gap: 18px;
+  padding: 24px clamp(24px, 6vw, 92px) 20px;
+  border-bottom: 1px solid var(--border);
+  background: #080b0f;
 }
 
 .brand {
-  display: inline-flex;
+  display: flex;
+  width: 100%;
   align-items: center;
+  justify-content: center;
 }
 
 .site-logo {
   display: block;
-  width: clamp(300px, 32vw, 520px);
+  width: clamp(280px, 30vw, 430px);
   height: auto;
-  max-width: none;
+  max-width: 100%;
   border-radius: 4px;
-  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.22);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.28);
 }
 
 .site-nav {
   display: flex;
-  gap: 32px;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px 32px;
+  padding-top: 17px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
   color: var(--muted);
-  font-size: 13px;
-  letter-spacing: 0.08em;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
 }
+
+
 
 .site-nav a {
   transition:
