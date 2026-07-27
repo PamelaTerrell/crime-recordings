@@ -1,12 +1,19 @@
 "use client";
 
+import {
+  ChangeEvent,
+  useState,
+} from "react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
 
 type RecordingPlayerProps = {
+  caseId: string;
   recordingId: string;
   title: string;
   recordingType: string;
+  fileSummary: string | null;
+  durationSeconds: number | null;
+  thumbnailObjectKey: string | null;
   originalFilename: string | null;
   mimeType: string | null;
   fileSizeBytes: number | null;
@@ -18,10 +25,22 @@ type RecordingPlayerProps = {
 
 type ApiResponse = {
   playbackUrl?: string;
+  uploadUrl?: string;
+  objectKey?: string;
   success?: boolean;
   cleanupWarning?: string | null;
   error?: string;
 };
+
+const MAX_THUMBNAIL_BYTES = 10 * 1024 * 1024;
+
+const allowedThumbnailTypes = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+  "image/avif",
+]);
 
 const recordingTypes = [
   { value: "911-call", label: "911 call" },
@@ -61,6 +80,28 @@ function formatRecordingType(value: string) {
     .join(" ");
 }
 
+function formatDuration(seconds: number | null) {
+  if (seconds === null) {
+    return null;
+  }
+
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const remainingSeconds = seconds % 60;
+
+  if (hours > 0) {
+    return `${hours}:${String(minutes).padStart(
+      2,
+      "0",
+    )}:${String(remainingSeconds).padStart(2, "0")}`;
+  }
+
+  return `${minutes}:${String(remainingSeconds).padStart(
+    2,
+    "0",
+  )}`;
+}
+
 async function readJsonResponse(response: Response) {
   const text = await response.text();
 
@@ -77,10 +118,61 @@ async function readJsonResponse(response: Response) {
   }
 }
 
+function uploadFileToR2(
+  uploadUrl: string,
+  file: File,
+) {
+  return new Promise<void>((resolve, reject) => {
+    const request = new XMLHttpRequest();
+
+    request.open("PUT", uploadUrl);
+    request.setRequestHeader(
+      "Content-Type",
+      file.type,
+    );
+
+    request.addEventListener("load", () => {
+      if (
+        request.status >= 200 &&
+        request.status < 300
+      ) {
+        resolve();
+        return;
+      }
+
+      reject(
+        new Error(
+          `Cloudflare rejected the thumbnail upload with status ${request.status}.`,
+        ),
+      );
+    });
+
+    request.addEventListener("error", () => {
+      reject(
+        new Error(
+          "The thumbnail upload was interrupted.",
+        ),
+      );
+    });
+
+    request.addEventListener("abort", () => {
+      reject(
+        new Error("The thumbnail upload was canceled."),
+      );
+    });
+
+    request.send(file);
+  });
+}
+
 export default function RecordingPlayer({
+  caseId,
   recordingId,
   title,
   recordingType,
+  fileSummary,
+  durationSeconds,
+  thumbnailObjectKey,
   originalFilename,
   mimeType,
   fileSizeBytes,
@@ -92,34 +184,96 @@ export default function RecordingPlayer({
   const router = useRouter();
 
   const [playbackUrl, setPlaybackUrl] = useState("");
-  const [showEditForm, setShowEditForm] = useState(false);
-  const [showDeleteConfirmation, setShowDeleteConfirmation] =
+  const [showEditForm, setShowEditForm] =
     useState(false);
+  const [
+    showDeleteConfirmation,
+    setShowDeleteConfirmation,
+  ] = useState(false);
 
-  const [editedTitle, setEditedTitle] = useState(title);
+  const [editedTitle, setEditedTitle] =
+    useState(title);
   const [editedType, setEditedType] =
     useState(recordingType);
+  const [editedSummary, setEditedSummary] =
+    useState(fileSummary ?? "");
+  const [editedDuration, setEditedDuration] =
+    useState(
+      durationSeconds === null
+        ? ""
+        : String(durationSeconds),
+    );
   const [editedAccess, setEditedAccess] = useState<
     "public" | "member"
   >(accessLevel === "public" ? "public" : "member");
   const [editedPublished, setEditedPublished] =
     useState(isPublished);
   const [editedFeatured, setEditedFeatured] =
-  useState(isFeatured);
+    useState(isFeatured);
   const [editedSortOrder, setEditedSortOrder] =
     useState(sortOrder);
 
+  const [thumbnailFile, setThumbnailFile] =
+    useState<File | null>(null);
+
   const [confirmationText, setConfirmationText] =
     useState("");
+
   const [pendingAction, setPendingAction] = useState<
     "playback" | "edit" | "delete" | null
   >(null);
+
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
   const formattedSize = formatFileSize(fileSizeBytes);
-  const canDelete = confirmationText.trim() === title.trim();
-  const isVideo = mimeType?.startsWith("video/") ?? false;
+  const formattedDuration =
+    formatDuration(durationSeconds);
+
+  const canDelete =
+    confirmationText.trim() === title.trim();
+
+  const isVideo =
+    mimeType?.startsWith("video/") ?? false;
+
+  function handleThumbnailChange(
+    event: ChangeEvent<HTMLInputElement>,
+  ) {
+    const selectedFile =
+      event.target.files?.[0] ?? null;
+
+    setError("");
+    setMessage("");
+
+    if (!selectedFile) {
+      setThumbnailFile(null);
+      return;
+    }
+
+    if (!allowedThumbnailTypes.has(selectedFile.type)) {
+      setThumbnailFile(null);
+      event.target.value = "";
+
+      setError(
+        "Please choose a JPG, PNG, WebP, GIF, or AVIF image.",
+      );
+
+      return;
+    }
+
+    if (selectedFile.size > MAX_THUMBNAIL_BYTES) {
+      setThumbnailFile(null);
+      event.target.value = "";
+
+      setError(
+        "The thumbnail image must be smaller than 10 MB.",
+      );
+
+      return;
+    }
+
+    setThumbnailFile(selectedFile);
+  }
 
   async function preparePlayback() {
     setPendingAction("playback");
@@ -161,12 +315,89 @@ export default function RecordingPlayer({
     }
   }
 
+  async function uploadThumbnail() {
+    if (!thumbnailFile) {
+      return thumbnailObjectKey;
+    }
+
+    const uploadUrlResponse = await fetch(
+      "/api/r2/upload-url",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          caseId,
+          filename: thumbnailFile.name,
+          contentType: thumbnailFile.type,
+          uploadCategory: "images",
+        }),
+      },
+    );
+
+    const uploadUrlData =
+      await readJsonResponse(uploadUrlResponse);
+
+    if (
+      !uploadUrlResponse.ok ||
+      !uploadUrlData.uploadUrl ||
+      !uploadUrlData.objectKey
+    ) {
+      throw new Error(
+        uploadUrlData.error ??
+          "The thumbnail upload could not be prepared.",
+      );
+    }
+
+    await uploadFileToR2(
+      uploadUrlData.uploadUrl,
+      thumbnailFile,
+    );
+
+    return uploadUrlData.objectKey;
+  }
+
   async function saveChanges() {
     setPendingAction("edit");
     setError("");
     setMessage("");
 
+    const trimmedTitle = editedTitle.trim();
+
+    if (!trimmedTitle) {
+      setError("Please enter a recording title.");
+      setPendingAction(null);
+      return;
+    }
+
+    let parsedDuration: number | null = null;
+
+    if (editedDuration.trim()) {
+      parsedDuration = Number(editedDuration);
+
+      if (
+        !Number.isInteger(parsedDuration) ||
+        parsedDuration < 0
+      ) {
+        setError(
+          "Duration must be a whole number of seconds.",
+        );
+        setPendingAction(null);
+        return;
+      }
+    }
+
     try {
+      if (thumbnailFile) {
+        setMessage("Uploading thumbnail image…");
+      }
+
+      const savedThumbnailObjectKey =
+        await uploadThumbnail();
+
+      setMessage("Saving recording changes…");
+
       const response = await fetch(
         `/api/recordings/${recordingId}`,
         {
@@ -175,13 +406,17 @@ export default function RecordingPlayer({
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-  title: editedTitle,
-  recordingType: editedType,
-  accessLevel: editedAccess,
-  isPublished: editedPublished,
-  isFeatured: editedFeatured,
-  sortOrder: editedSortOrder,
-}),
+            title: trimmedTitle,
+            recordingType: editedType,
+            fileSummary: editedSummary.trim(),
+            durationSeconds: parsedDuration,
+            thumbnailObjectKey:
+              savedThumbnailObjectKey ?? "",
+            accessLevel: editedAccess,
+            isPublished: editedPublished,
+            isFeatured: editedFeatured,
+            sortOrder: editedSortOrder,
+          }),
         },
       );
 
@@ -194,6 +429,7 @@ export default function RecordingPlayer({
         );
       }
 
+      setThumbnailFile(null);
       setMessage("Recording updated.");
       setShowEditForm(false);
 
@@ -204,6 +440,8 @@ export default function RecordingPlayer({
           ? updateError.message
           : "The recording could not be updated.",
       );
+
+      setMessage("");
     } finally {
       setPendingAction(null);
     }
@@ -261,10 +499,16 @@ export default function RecordingPlayer({
             </span>
 
             {isFeatured ? (
-  <span className="border border-[#c8a66a] bg-[#c8a66a]/10 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#e1c58f]">
-    Featured hero
-  </span>
-) : null}
+              <span className="border border-[#c8a66a] bg-[#c8a66a]/10 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#e1c58f]">
+                Featured hero
+              </span>
+            ) : null}
+
+            {thumbnailObjectKey ? (
+              <span className="border border-emerald-400/30 bg-emerald-400/10 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.12em] text-emerald-200">
+                Thumbnail attached
+              </span>
+            ) : null}
 
             <span className="border border-white/10 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#a8adb5]">
               {accessLevel === "public"
@@ -281,12 +525,24 @@ export default function RecordingPlayer({
             {title}
           </h3>
 
+          {fileSummary ? (
+            <p className="mt-3 max-w-3xl leading-7 text-[#c8cbd0]">
+              {fileSummary}
+            </p>
+          ) : null}
+
           <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm text-[#a8adb5]">
             {originalFilename ? (
               <span>{originalFilename}</span>
             ) : null}
 
-            {formattedSize ? <span>{formattedSize}</span> : null}
+            {formattedSize ? (
+              <span>{formattedSize}</span>
+            ) : null}
+
+            {formattedDuration ? (
+              <span>{formattedDuration}</span>
+            ) : null}
 
             {mimeType ? <span>{mimeType}</span> : null}
 
@@ -440,9 +696,48 @@ export default function RecordingPlayer({
                 disabled={pendingAction !== null}
                 className="min-h-13 border border-white/10 bg-[#080b0f] px-4 text-[#f4f1e9] outline-none focus:border-[#c8a66a]"
               >
-                <option value="member">Members only</option>
+                <option value="member">
+                  Members only
+                </option>
+
                 <option value="public">Public</option>
               </select>
+            </label>
+
+            <label className="grid gap-2 md:col-span-2">
+              <span className="text-xs font-extrabold uppercase tracking-[0.12em] text-[#d8d9dc]">
+                File summary
+              </span>
+
+              <textarea
+                value={editedSummary}
+                onChange={(event) =>
+                  setEditedSummary(event.target.value)
+                }
+                disabled={pendingAction !== null}
+                rows={4}
+                placeholder="Explain what happens in this recording."
+                className="border border-white/10 bg-[#080b0f] px-4 py-3 text-[#f4f1e9] outline-none focus:border-[#c8a66a]"
+              />
+            </label>
+
+            <label className="grid gap-2">
+              <span className="text-xs font-extrabold uppercase tracking-[0.12em] text-[#d8d9dc]">
+                Duration in seconds
+              </span>
+
+              <input
+                type="number"
+                min="0"
+                step="1"
+                value={editedDuration}
+                onChange={(event) =>
+                  setEditedDuration(event.target.value)
+                }
+                disabled={pendingAction !== null}
+                placeholder="Example: 3842"
+                className="min-h-13 border border-white/10 bg-[#080b0f] px-4 text-[#f4f1e9] outline-none focus:border-[#c8a66a]"
+              />
             </label>
 
             <label className="grid gap-2">
@@ -466,69 +761,107 @@ export default function RecordingPlayer({
               />
             </label>
 
-            <div className="grid gap-4 self-end pb-3">
-  <label className="flex items-start gap-3">
-    <input
-      type="checkbox"
-      checked={editedPublished}
-      onChange={(event) => {
-        const checked = event.target.checked;
+            <label className="grid gap-3 border border-dashed border-[#c8a66a]/50 bg-[#080b0f] p-5 md:col-span-2">
+              <span className="text-xs font-extrabold uppercase tracking-[0.12em] text-[#e1c58f]">
+                Thumbnail image
+              </span>
 
-        setEditedPublished(checked);
+              <input
+                type="file"
+                accept=".jpg,.jpeg,.png,.webp,.gif,.avif,image/*"
+                onChange={handleThumbnailChange}
+                disabled={pendingAction !== null}
+                className="block w-full text-sm text-[#a8adb5] file:mr-4 file:border file:border-[#c8a66a] file:bg-[#c8a66a] file:px-5 file:py-3 file:text-xs file:font-extrabold file:uppercase file:tracking-[0.08em] file:text-[#111318]"
+              />
 
-        if (!checked) {
-          setEditedFeatured(false);
-        }
-      }}
-      disabled={pendingAction !== null}
-      className="mt-0.5 h-5 w-5 accent-[#c8a66a]"
-    />
+              {thumbnailFile ? (
+                <span className="text-sm text-[#d8d9dc]">
+                  Selected: {thumbnailFile.name} ·{" "}
+                  {formatFileSize(thumbnailFile.size)}
+                </span>
+              ) : thumbnailObjectKey ? (
+                <span className="text-sm text-emerald-200">
+                  A thumbnail image is already attached.
+                  Selecting another image will replace it.
+                </span>
+              ) : (
+                <span className="text-sm text-[#747b84]">
+                  Choose the screenshot you want displayed
+                  beside this recording.
+                </span>
+              )}
+            </label>
 
-    <span>
-      <strong className="block text-sm font-medium text-[#d8d9dc]">
-        Published
-      </strong>
+            <div className="grid gap-4 self-end pb-3 md:col-span-2">
+              <label className="flex items-start gap-3">
+                <input
+                  type="checkbox"
+                  checked={editedPublished}
+                  onChange={(event) => {
+                    const checked =
+                      event.target.checked;
 
-      <small className="mt-1 block text-xs leading-5 text-[#747b84]">
-        Only published recordings can appear publicly.
-      </small>
-    </span>
-  </label>
+                    setEditedPublished(checked);
 
-  <label
-    className={`flex items-start gap-3 ${
-      !isVideo ? "cursor-not-allowed opacity-50" : ""
-    }`}
-  >
-    <input
-      type="checkbox"
-      checked={editedFeatured}
-      onChange={(event) => {
-        const checked = event.target.checked;
+                    if (!checked) {
+                      setEditedFeatured(false);
+                    }
+                  }}
+                  disabled={pendingAction !== null}
+                  className="mt-0.5 h-5 w-5 accent-[#c8a66a]"
+                />
 
-        setEditedFeatured(checked);
+                <span>
+                  <strong className="block text-sm font-medium text-[#d8d9dc]">
+                    Published
+                  </strong>
 
-        if (checked) {
-          setEditedPublished(true);
-        }
-      }}
-      disabled={!isVideo || pendingAction !== null}
-      className="mt-0.5 h-5 w-5 accent-[#c8a66a]"
-    />
+                  <small className="mt-1 block text-xs leading-5 text-[#747b84]">
+                    Only published recordings can appear
+                    publicly.
+                  </small>
+                </span>
+              </label>
 
-    <span>
-      <strong className="block text-sm font-medium text-[#d8d9dc]">
-        Feature at top of public case page
-      </strong>
+              <label
+                className={`flex items-start gap-3 ${
+                  !isVideo
+                    ? "cursor-not-allowed opacity-50"
+                    : ""
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={editedFeatured}
+                  onChange={(event) => {
+                    const checked =
+                      event.target.checked;
 
-      <small className="mt-1 block text-xs leading-5 text-[#747b84]">
-        {isVideo
-          ? "This video will become the large hero video for the case."
-          : "Only video recordings can be featured."}
-      </small>
-    </span>
-  </label>
-</div>
+                    setEditedFeatured(checked);
+
+                    if (checked) {
+                      setEditedPublished(true);
+                    }
+                  }}
+                  disabled={
+                    !isVideo || pendingAction !== null
+                  }
+                  className="mt-0.5 h-5 w-5 accent-[#c8a66a]"
+                />
+
+                <span>
+                  <strong className="block text-sm font-medium text-[#d8d9dc]">
+                    Feature at top of public case page
+                  </strong>
+
+                  <small className="mt-1 block text-xs leading-5 text-[#747b84]">
+                    {isVideo
+                      ? "This video will become the large hero video for the case."
+                      : "Only video recordings can be featured."}
+                  </small>
+                </span>
+              </label>
+            </div>
           </div>
 
           <div>
@@ -553,8 +886,8 @@ export default function RecordingPlayer({
           </h4>
 
           <p className="mt-3 leading-7 text-[#a8adb5]">
-            This removes the recording record and its media file
-            from Cloudflare R2. Type{" "}
+            This removes the recording, its media file, and
+            its thumbnail from Cloudflare R2. Type{" "}
             <strong className="text-[#f4f1e9]">
               {title}
             </strong>{" "}

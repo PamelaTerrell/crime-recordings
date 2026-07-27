@@ -79,7 +79,9 @@ export async function PATCH(
     const body = await request.json();
 
     const title =
-      typeof body.title === "string" ? body.title.trim() : "";
+      typeof body.title === "string"
+        ? body.title.trim()
+        : "";
 
     const recordingType =
       typeof body.recordingType === "string"
@@ -99,6 +101,41 @@ export async function PATCH(
       Number.isInteger(body.sortOrder)
         ? body.sortOrder
         : 0;
+
+    const hasFileSummary =
+      Object.prototype.hasOwnProperty.call(
+        body,
+        "fileSummary",
+      );
+
+    const fileSummary =
+      typeof body.fileSummary === "string"
+        ? body.fileSummary.trim()
+        : null;
+
+    const hasThumbnailObjectKey =
+      Object.prototype.hasOwnProperty.call(
+        body,
+        "thumbnailObjectKey",
+      );
+
+    const thumbnailObjectKey =
+      typeof body.thumbnailObjectKey === "string"
+        ? body.thumbnailObjectKey.trim()
+        : null;
+
+    const hasDurationSeconds =
+      Object.prototype.hasOwnProperty.call(
+        body,
+        "durationSeconds",
+      );
+
+    const durationSeconds =
+      typeof body.durationSeconds === "number" &&
+      Number.isInteger(body.durationSeconds) &&
+      body.durationSeconds >= 0
+        ? body.durationSeconds
+        : null;
 
     if (!title) {
       return NextResponse.json(
@@ -121,6 +158,20 @@ export async function PATCH(
       );
     }
 
+    if (
+      hasDurationSeconds &&
+      body.durationSeconds !== null &&
+      durationSeconds === null
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Duration must be a whole number of seconds.",
+        },
+        { status: 400 },
+      );
+    }
+
     const { data: currentRecording, error: currentError } =
       await supabase
         .from("recordings")
@@ -130,7 +181,10 @@ export async function PATCH(
             case_id,
             mime_type,
             published_at,
-            is_featured
+            is_featured,
+            file_summary,
+            thumbnail_object_key,
+            duration_seconds
           `,
         )
         .eq("id", id)
@@ -151,7 +205,8 @@ export async function PATCH(
     }
 
     const isVideo =
-      currentRecording.mime_type?.startsWith("video/") ?? false;
+      currentRecording.mime_type?.startsWith("video/") ??
+      false;
 
     if (isFeatured && !isVideo) {
       return NextResponse.json(
@@ -166,8 +221,7 @@ export async function PATCH(
     if (isFeatured && !isPublished) {
       return NextResponse.json(
         {
-          error:
-            "A featured video must also be published.",
+          error: "A featured video must also be published.",
         },
         { status: 400 },
       );
@@ -178,21 +232,18 @@ export async function PATCH(
         new Date().toISOString()
       : null;
 
-    /*
-     * Remove the featured flag from every other recording
-     * belonging to this case before featuring the selected one.
-     */
     if (isFeatured) {
-      const { error: clearFeaturedError } = await supabase
-        .from("recordings")
-        .update({
-          is_featured: false,
-          updated_by: user.id,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("case_id", currentRecording.case_id)
-        .neq("id", id)
-        .eq("is_featured", true);
+      const { error: clearFeaturedError } =
+        await supabase
+          .from("recordings")
+          .update({
+            is_featured: false,
+            updated_by: user.id,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("case_id", currentRecording.case_id)
+          .neq("id", id)
+          .eq("is_featured", true);
 
       if (clearFeaturedError) {
         return NextResponse.json(
@@ -209,6 +260,19 @@ export async function PATCH(
       .update({
         title,
         recording_type: recordingType,
+
+        file_summary: hasFileSummary
+          ? fileSummary || null
+          : currentRecording.file_summary,
+
+        thumbnail_object_key: hasThumbnailObjectKey
+          ? thumbnailObjectKey || null
+          : currentRecording.thumbnail_object_key,
+
+        duration_seconds: hasDurationSeconds
+          ? durationSeconds
+          : currentRecording.duration_seconds,
+
         access_level: accessLevel,
         is_published: isPublished,
         is_featured: isFeatured,
@@ -269,7 +333,8 @@ export async function DELETE(
           `
             id,
             full_object_key,
-            preview_object_key
+            preview_object_key,
+            thumbnail_object_key
           `,
         )
         .eq("id", id)
@@ -304,9 +369,11 @@ export async function DELETE(
     const objectKeys = [
       recording.full_object_key,
       recording.preview_object_key,
+      recording.thumbnail_object_key,
     ].filter(
       (value): value is string =>
-        typeof value === "string" && value.length > 0,
+        typeof value === "string" &&
+        value.length > 0,
     );
 
     const cleanupResults = await Promise.allSettled(

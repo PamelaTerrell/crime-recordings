@@ -59,13 +59,17 @@ export default async function AdminCasePage({
     notFound();
   }
 
-  const { data: recordings, error: recordingsError } = await supabase
+  const { data: recordings, error: recordingsError } =
+  await supabase
     .from("recordings")
     .select(
       `
         id,
         title,
         recording_type,
+        file_summary,
+        duration_seconds,
+        thumbnail_object_key,
         original_filename,
         mime_type,
         file_size_bytes,
@@ -83,6 +87,7 @@ export default async function AdminCasePage({
     .order("created_at", {
       ascending: true,
     });
+   
 
   if (recordingsError) {
     throw new Error(
@@ -271,18 +276,22 @@ export default async function AdminCasePage({
           <div className="grid gap-4">
             {recordings.map((recording) => (
               <RecordingPlayer
-                key={recording.id}
-                recordingId={recording.id}
-                title={recording.title}
-                recordingType={recording.recording_type}
-                originalFilename={recording.original_filename}
-                mimeType={recording.mime_type}
-                fileSizeBytes={recording.file_size_bytes}
-                accessLevel={recording.access_level}
-                isPublished={recording.is_published}
-                isFeatured={recording.is_featured}
-                sortOrder={recording.sort_order}
-              />
+  key={recording.id}
+  caseId={caseItem.id}
+  recordingId={recording.id}
+  title={recording.title}
+  recordingType={recording.recording_type}
+  fileSummary={recording.file_summary}
+  durationSeconds={recording.duration_seconds}
+  thumbnailObjectKey={recording.thumbnail_object_key}
+  originalFilename={recording.original_filename}
+  mimeType={recording.mime_type}
+  fileSizeBytes={recording.file_size_bytes}
+  accessLevel={recording.access_level}
+  isPublished={recording.is_published}
+  isFeatured={recording.is_featured}
+  sortOrder={recording.sort_order}
+/>
             ))}
           </div>
         ) : (
