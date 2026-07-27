@@ -138,13 +138,17 @@ export default async function Home() {
           aria-label="Crime Recordings home"
         >
           <Image
-            src="/crime-recordings-logo.png"
-            alt="Crime Recordings"
-            width={440}
-            height={294}
-            priority
-            className="site-logo h-auto w-[300px] md:w-[380px] lg:w-[440px]"
-          />
+  src="/crime-recordings-logo.png"
+  alt="Crime Recordings"
+  width={600}
+  height={400}
+  priority
+  className="h-auto"
+  style={{
+    width: "clamp(320px, 34vw, 600px)",
+    maxWidth: "none",
+  }}
+/>
         </Link>
 
         <nav

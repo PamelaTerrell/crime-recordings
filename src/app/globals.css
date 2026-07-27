@@ -60,8 +60,9 @@ a {
 
 .site-logo {
   display: block;
-  width: 190px;
+  width: clamp(300px, 32vw, 520px);
   height: auto;
+  max-width: none;
   border-radius: 4px;
   box-shadow: 0 14px 40px rgba(0, 0, 0, 0.22);
 }
