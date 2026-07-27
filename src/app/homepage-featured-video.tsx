@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type HomepageFeaturedVideoProps = {
   recordingId: string;
@@ -32,6 +32,8 @@ export default function HomepageFeaturedVideo({
   recordingId,
   title,
 }: HomepageFeaturedVideoProps) {
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+
   const [playbackUrl, setPlaybackUrl] = useState("");
   const [error, setError] = useState("");
 
@@ -83,6 +85,24 @@ export default function HomepageFeaturedVideo({
     };
   }, [recordingId]);
 
+  function startPreview() {
+    const video = videoRef.current;
+
+    if (!video) {
+      return;
+    }
+
+    if (video.duration > 30) {
+      video.currentTime = 30;
+    }
+
+    video.muted = true;
+
+    void video.play().catch(() => {
+      // Autoplay may be delayed by the browser.
+    });
+  }
+
   if (error) {
     return (
       <div className="grid min-h-[45vh] place-items-center border-y border-white/10 bg-black px-6 text-center">
@@ -105,6 +125,7 @@ export default function HomepageFeaturedVideo({
 
   return (
     <video
+      ref={videoRef}
       autoPlay
       muted
       loop
@@ -113,6 +134,7 @@ export default function HomepageFeaturedVideo({
       preload="auto"
       src={playbackUrl}
       aria-label={title}
+      onLoadedMetadata={startPreview}
       className="max-h-[85vh] min-h-[45vh] w-full border-y border-white/10 bg-black object-contain md:min-h-[65vh]"
     >
       Your browser does not support video playback.
