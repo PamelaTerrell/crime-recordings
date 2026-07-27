@@ -175,7 +175,7 @@ export default async function CasesArchivePage({
 
   return (
     <main className="min-h-screen bg-[#080b0f] text-[#f4f1e9]">
-      <header className="flex min-h-24 items-center justify-between gap-6 border-b border-white/10 px-5 py-5 md:px-10 lg:px-16">
+      <header className="flex min-h-20 items-center justify-between gap-6 border-b border-white/10 px-5 py-4 md:px-10 lg:px-16">
         <Link
           href="/"
           className="font-serif text-2xl font-medium tracking-tight text-[#f4f1e9]"
@@ -200,18 +200,18 @@ export default async function CasesArchivePage({
         </nav>
       </header>
 
-      <section className="border-b border-white/10 px-5 py-20 md:px-10 lg:px-16 lg:py-28">
+      <section className="border-b border-white/10 px-5 py-12 md:px-10 md:py-14 lg:px-16 lg:py-16">
         <div className="mx-auto max-w-[1500px]">
-          <p className="mb-5 text-xs font-extrabold uppercase tracking-[0.24em] text-[#e1c58f]">
+          <p className="mb-4 text-xs font-extrabold uppercase tracking-[0.24em] text-[#e1c58f]">
             Public-record documentary archive
           </p>
 
-          <h1 className="m-0 max-w-6xl font-serif text-[clamp(4rem,10vw,9rem)] font-medium leading-[0.88] tracking-[-0.055em]">
+          <h1 className="m-0 max-w-6xl font-serif text-[clamp(3.5rem,8vw,7.5rem)] font-medium leading-[0.9] tracking-[-0.05em]">
             Case archive
           </h1>
 
-          <div className="mt-10 grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(300px,0.45fr)] lg:items-end">
-            <p className="m-0 max-w-4xl text-lg leading-9 text-[#b8bcc2] md:text-xl">
+          <div className="mt-7 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(240px,0.35fr)] lg:items-end">
+            <p className="m-0 max-w-4xl text-base leading-8 text-[#b8bcc2] md:text-lg">
               Explore documented criminal cases through original
               interviews, interrogations, dispatch calls, body-camera
               footage, courtroom recordings, and other public-record
@@ -247,7 +247,7 @@ export default async function CasesArchivePage({
         </div>
       </section>
 
-      <section className="border-b border-white/10 bg-[#0b0f14] px-5 py-8 md:px-10 lg:px-16">
+      <section className="border-b border-white/10 bg-[#0b0f14] px-5 py-5 md:px-10 md:py-6 lg:px-16">
         <div className="mx-auto max-w-[1500px]">
           <form
             action="/cases"
@@ -305,7 +305,7 @@ export default async function CasesArchivePage({
         </div>
       </section>
 
-      <section className="px-5 py-10 md:px-10 lg:px-16 lg:py-14">
+      <section className="px-5 py-6 md:px-10 md:py-8 lg:px-16 lg:py-8">
         <div className="mx-auto max-w-[1500px]">
           {filteredCases.length > 0 ? (
             <div className="overflow-hidden border border-white/10">
