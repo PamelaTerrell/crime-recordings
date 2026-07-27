@@ -183,9 +183,10 @@ export default async function Home() {
          
 
             <HomepageFeaturedVideo
-              recordingId={featuredRecording.id}
-              title={featuredRecording.title}
-            />
+  recordingId={featuredRecording.id}
+  title={featuredRecording.title}
+  caseHref={`/cases/${featuredCase.slug}`}
+/>
 
              <div className="mx-auto max-w-[1600px]">
             <div className="px-5 pb-10 md:px-10 lg:px-16">
