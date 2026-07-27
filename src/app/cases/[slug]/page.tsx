@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { GetObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { createClient } from "@/lib/supabase/server";
+import { r2BucketName, r2Client } from "@/lib/r2";
 import PublicMediaPlayer from "./public-media-player";
 import CaseImageGallery from "./case-image-gallery";
 
@@ -14,30 +17,31 @@ type PublicCasePageProps = {
 async function getPublishedCase(slug: string) {
   const supabase = await createClient();
 
-  const { data: caseItem, error: caseError } = await supabase
-    .from("cases")
-    .select(
-      `
-        id,
-        title,
-        subtitle,
-        slug,
-        summary,
-        description,
-        victim_names,
-        accused_names,
-        location_city,
-        location_state,
-        location_country,
-        incident_date,
-        content_warning,
-        case_status,
-        published_at
-      `,
-    )
-    .eq("slug", slug)
-    .eq("case_status", "published")
-    .maybeSingle();
+  const { data: caseItem, error: caseError } =
+    await supabase
+      .from("cases")
+      .select(
+        `
+          id,
+          title,
+          subtitle,
+          slug,
+          summary,
+          description,
+          victim_names,
+          accused_names,
+          location_city,
+          location_state,
+          location_country,
+          incident_date,
+          content_warning,
+          case_status,
+          published_at
+        `,
+      )
+      .eq("slug", slug)
+      .eq("case_status", "published")
+      .maybeSingle();
 
   if (caseError) {
     throw new Error(
@@ -57,6 +61,9 @@ async function getPublishedCase(slug: string) {
           id,
           title,
           recording_type,
+          file_summary,
+          duration_seconds,
+          thumbnail_object_key,
           mime_type,
           access_level,
           is_featured,
@@ -79,9 +86,51 @@ async function getPublishedCase(slug: string) {
     );
   }
 
+  const recordingsWithThumbnails = await Promise.all(
+    (recordings ?? []).map(async (recording) => {
+      if (!recording.thumbnail_object_key) {
+        return {
+          ...recording,
+          thumbnail_url: null,
+        };
+      }
+
+      try {
+        const command = new GetObjectCommand({
+          Bucket: r2BucketName,
+          Key: recording.thumbnail_object_key,
+          ResponseContentDisposition: "inline",
+        });
+
+        const thumbnailUrl = await getSignedUrl(
+          r2Client,
+          command,
+          {
+            expiresIn: 60 * 60,
+          },
+        );
+
+        return {
+          ...recording,
+          thumbnail_url: thumbnailUrl,
+        };
+      } catch (thumbnailError) {
+        console.error(
+          `Unable to prepare thumbnail for recording ${recording.id}:`,
+          thumbnailError,
+        );
+
+        return {
+          ...recording,
+          thumbnail_url: null,
+        };
+      }
+    }),
+  );
+
   return {
     caseItem,
-    recordings: recordings ?? [],
+    recordings: recordingsWithThumbnails,
   };
 }
 
@@ -143,6 +192,28 @@ function formatRecordingType(value: string) {
     .join(" ");
 }
 
+function formatDuration(seconds: number | null) {
+  if (seconds === null) {
+    return null;
+  }
+
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const remainingSeconds = seconds % 60;
+
+  if (hours > 0) {
+    return `${hours}:${String(minutes).padStart(
+      2,
+      "0",
+    )}:${String(remainingSeconds).padStart(2, "0")}`;
+  }
+
+  return `${minutes}:${String(remainingSeconds).padStart(
+    2,
+    "0",
+  )}`;
+}
+
 export default async function PublicCasePage({
   params,
 }: PublicCasePageProps) {
@@ -156,7 +227,8 @@ export default async function PublicCasePage({
   const { caseItem, recordings } = result;
 
   const memberRecordings = recordings.filter(
-    (recording) => recording.access_level === "member",
+    (recording) =>
+      recording.access_level === "member",
   );
 
   const location =
@@ -212,7 +284,10 @@ export default async function PublicCasePage({
           ) : null}
 
           <div className="mt-9 flex flex-wrap gap-x-8 gap-y-3 border-t border-white/10 pt-6 text-sm text-[#a8adb5]">
-            <span>{formatDate(caseItem.incident_date)}</span>
+            <span>
+              {formatDate(caseItem.incident_date)}
+            </span>
+
             <span>{location}</span>
 
             <span>
@@ -242,7 +317,8 @@ export default async function PublicCasePage({
                 </dt>
 
                 <dd className="mt-2 whitespace-pre-wrap text-base leading-7 text-[#d8d9dc]">
-                  {caseItem.victim_names ?? "Not listed"}
+                  {caseItem.victim_names ??
+                    "Not listed"}
                 </dd>
               </div>
 
@@ -252,7 +328,8 @@ export default async function PublicCasePage({
                 </dt>
 
                 <dd className="mt-2 whitespace-pre-wrap text-base leading-7 text-[#d8d9dc]">
-                  {caseItem.accused_names ?? "Not listed"}
+                  {caseItem.accused_names ??
+                    "Not listed"}
                 </dd>
               </div>
 
@@ -262,7 +339,9 @@ export default async function PublicCasePage({
                 </dt>
 
                 <dd className="mt-2 text-base text-[#d8d9dc]">
-                  {formatDate(caseItem.incident_date)}
+                  {formatDate(
+                    caseItem.incident_date,
+                  )}
                 </dd>
               </div>
 
@@ -330,9 +409,10 @@ export default async function PublicCasePage({
           {memberRecordings.length > 0 ? (
             <div className="mt-8 max-w-4xl border-l border-[#c8a66a] pl-5">
               <p className="text-base leading-7 text-[#b8bcc2]">
-                The first recording in this case is available
-                publicly. Additional recordings are available
-                with a Crime Recordings membership.
+                The first recording in this case is
+                available publicly. Additional recordings
+                are available with a Crime Recordings
+                membership.
               </p>
 
               <div className="mt-4 flex flex-wrap gap-4 text-xs font-extrabold uppercase tracking-[0.1em]">
@@ -355,55 +435,108 @@ export default async function PublicCasePage({
 
           {recordings.length > 0 ? (
             <div className="mt-12 grid gap-8">
-              {recordings.map((recording, index) => (
-                <article
-                  key={recording.id}
-                  className="grid gap-6 border-t border-white/10 pt-8 lg:grid-cols-[120px_minmax(0,1fr)]"
-                >
-                  <div className="font-serif text-3xl text-[#c8a66a]">
-                    {String(index + 1).padStart(2, "0")}
-                  </div>
+              {recordings.map(
+                (recording, index) => {
+                  const formattedDuration =
+                    formatDuration(
+                      recording.duration_seconds,
+                    );
 
-                  <div>
-                    <div className="mb-4 flex flex-wrap gap-2">
-                      <span className="border border-[#c8a66a]/40 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#e1c58f]">
-                        {formatRecordingType(
-                          recording.recording_type,
+                  return (
+                    <article
+                      key={recording.id}
+                      className="grid gap-6 border-t border-white/10 pt-8 lg:grid-cols-[120px_minmax(0,1fr)]"
+                    >
+                      <div className="font-serif text-3xl text-[#c8a66a]">
+                        {String(index + 1).padStart(
+                          2,
+                          "0",
                         )}
-                      </span>
+                      </div>
 
-                      <span className="border border-white/10 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#a8adb5]">
-                        {recording.mime_type?.startsWith(
-                          "video/",
-                        )
-                          ? "Video"
-                          : "Audio"}
-                      </span>
+                      <div
+                        className={`grid gap-6 ${
+                          recording.thumbnail_url
+                            ? "md:grid-cols-[220px_minmax(0,1fr)] lg:grid-cols-[260px_minmax(0,1fr)]"
+                            : ""
+                        }`}
+                      >
+                        {recording.thumbnail_url ? (
+                          <div className="self-start overflow-hidden border border-white/10 bg-black">
+                            <img
+                              src={
+                                recording.thumbnail_url
+                              }
+                              alt={`Thumbnail for ${recording.title}`}
+                              className="aspect-video h-auto w-full object-cover"
+                            />
+                          </div>
+                        ) : null}
 
-                      <span className="border border-white/10 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#a8adb5]">
-                        {recording.access_level === "public"
-                          ? "Public"
-                          : "Members only"}
-                      </span>
-                    </div>
+                        <div className="min-w-0">
+                          <div className="mb-4 flex flex-wrap gap-2">
+                            <span className="border border-[#c8a66a]/40 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#e1c58f]">
+                              {formatRecordingType(
+                                recording.recording_type,
+                              )}
+                            </span>
 
-                    <h3 className="m-0 font-serif text-3xl font-medium md:text-4xl">
-                      {recording.title}
-                    </h3>
+                            <span className="border border-white/10 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#a8adb5]">
+                              {recording.mime_type?.startsWith(
+                                "video/",
+                              )
+                                ? "Video"
+                                : "Audio"}
+                            </span>
 
-                    <div className="mt-6">
-                      <PublicMediaPlayer
-                        recordingId={recording.id}
-                        title={recording.title}
-                        mimeType={recording.mime_type}
-                        accessLevel={
-                          recording.access_level
-                        }
-                      />
-                    </div>
-                  </div>
-                </article>
-              ))}
+                            <span className="border border-white/10 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#a8adb5]">
+                              {recording.access_level ===
+                              "public"
+                                ? "Public"
+                                : "Members only"}
+                            </span>
+
+                            {formattedDuration ? (
+                              <span className="border border-white/10 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#a8adb5]">
+                                {formattedDuration}
+                              </span>
+                            ) : null}
+                          </div>
+
+                          <h3 className="m-0 font-serif text-3xl font-medium md:text-4xl">
+                            {recording.title}
+                          </h3>
+
+                          {recording.file_summary ? (
+                            <p className="mt-4 max-w-3xl text-base leading-7 text-[#b8bcc2]">
+                              {
+                                recording.file_summary
+                              }
+                            </p>
+                          ) : null}
+
+                          <div className="mt-6">
+                            <PublicMediaPlayer
+                              recordingId={
+                                recording.id
+                              }
+                              title={
+                                recording.title
+                              }
+                              mimeType={
+                                recording.mime_type
+                              }
+                              accessLevel={
+                                recording.access_level
+                              }
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </article>
+                  );
+                },
+              )}
             </div>
           ) : (
             <p className="mt-10 text-lg text-[#a8adb5]">
@@ -415,7 +548,8 @@ export default async function PublicCasePage({
 
       <footer className="flex flex-col justify-between gap-5 border-t border-white/10 px-5 py-10 text-sm text-[#747b84] md:flex-row md:px-10 lg:px-16">
         <p className="m-0">
-          Crime Recordings · Public-record documentary archive
+          Crime Recordings · Public-record documentary
+          archive
         </p>
 
         <Link
