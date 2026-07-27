@@ -42,14 +42,14 @@ a {
 }
 
 
-    ),
+    
     linear-gradient(
       135deg,
       #080b0f 0%,
       #10151b 50%,
       #080b0f 100%
     );
-}
+
 
 .brand {
   display: flex;
