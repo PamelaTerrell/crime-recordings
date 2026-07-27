@@ -462,16 +462,14 @@ export default async function PublicCasePage({
                         }`}
                       >
                         {recording.thumbnail_url ? (
-                          <div className="self-start overflow-hidden border border-white/10 bg-black">
-                            <img
-                              src={
-                                recording.thumbnail_url
-                              }
-                              alt={`Thumbnail for ${recording.title}`}
-                              className="aspect-video h-auto w-full object-center"
-                            />
-                          </div>
-                        ) : null}
+  <div className="h-[183px] w-full self-start overflow-hidden border border-white/10 bg-black md:w-[325px]">
+    <img
+      src={recording.thumbnail_url}
+      alt={`Thumbnail for ${recording.title}`}
+      className="h-full w-full object-cover object-center"
+    />
+  </div>
+) : null}
 
                         <div className="min-w-0">
                           <div className="mb-4 flex flex-wrap gap-2">
