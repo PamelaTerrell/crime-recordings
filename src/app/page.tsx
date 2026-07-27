@@ -132,48 +132,48 @@ export default async function Home() {
   return (
     <main>
       <header className="site-header">
-        <Link
-          className="brand"
-          href="/"
-          aria-label="Crime Recordings home"
-        >
-          <Image
-  src="/crime-recordings-logo.png"
-  alt="Crime Recordings"
-  width={600}
-  height={400}
-  priority
-  className="h-auto"
-  style={{
-    width: "clamp(320px, 34vw, 600px)",
-    maxWidth: "none",
-  }}
-/>
-        </Link>
+  <div className="logo-banner">
+    <Link
+      className="brand"
+      href="/"
+      aria-label="Crime Recordings home"
+    >
+      <Image
+        src="/crime-recordings-logo.png"
+        alt="Crime Recordings"
+        width={600}
+        height={400}
+        priority
+        className="site-logo"
+      />
+    </Link>
+  </div>
 
-        <nav
-          className="site-nav"
-          aria-label="Primary navigation"
-        >
-          <a href="#about">About</a>
+  <nav
+    className="site-nav"
+    aria-label="Primary navigation"
+  >
+    <a href="#about">About</a>
 
-          <Link href="/cases">
-            The Archive
-          </Link>
+    <Link href="/cases">
+      The Archive
+    </Link>
 
-          <a href="#updates">
-            Updates
-          </a>
+    <a href="#updates">
+      Updates
+    </a>
 
-          <Link href="/membership">
-            Join for $2.99
-          </Link>
+    <Link href="/membership">
+      Join for $2.99
+    </Link>
 
-          <Link href="/account">
-            My Account
-          </Link>
-        </nav>
-      </header>
+    <Link href="/account">
+      My Account
+    </Link>
+  </nav>
+</header>
+   
+        
 
       {featuredRecording && featuredCase ? (
         <section
