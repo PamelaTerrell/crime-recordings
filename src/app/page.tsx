@@ -180,7 +180,14 @@ export default async function Home() {
           id="top"
           className="bg-[#080b0f] pb-16 pt-14 text-[#f4f1e9] md:pb-24 md:pt-20"
         >
-          <div className="mx-auto max-w-[1600px]">
+         
+
+            <HomepageFeaturedVideo
+              recordingId={featuredRecording.id}
+              title={featuredRecording.title}
+            />
+
+             <div className="mx-auto max-w-[1600px]">
             <div className="px-5 pb-10 md:px-10 lg:px-16">
               <p className="mb-5 text-xs font-extrabold uppercase tracking-[0.24em] text-[#e1c58f]">
                 Original public-record media
@@ -198,11 +205,6 @@ export default async function Home() {
                 public-record sources.
               </p>
             </div>
-
-            <HomepageFeaturedVideo
-              recordingId={featuredRecording.id}
-              title={featuredRecording.title}
-            />
 
             <div className="grid gap-8 px-5 pt-9 md:px-10 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center lg:px-16">
               <div>
