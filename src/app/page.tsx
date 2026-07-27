@@ -178,7 +178,7 @@ export default async function Home() {
       {featuredRecording && featuredCase ? (
         <section
           id="top"
-          className="bg-[#080b0f] pb-16 pt-32 text-[#f4f1e9] md:pb-24 md:pt-40"
+          className="bg-[#080b0f] pb-16 pt-14 text-[#f4f1e9] md:pb-24 md:pt-20"
         >
           <div className="mx-auto max-w-[1600px]">
             <div className="px-5 pb-10 md:px-10 lg:px-16">
