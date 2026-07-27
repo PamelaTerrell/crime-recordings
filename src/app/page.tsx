@@ -133,12 +133,11 @@ export default async function Home() {
     <main>
       <header className="site-header">
   <Link
-    href="/"
-    className="brand-text"
-    aria-label="Crime Recordings home"
-  >
-    Crime Recordings
-  </Link>
+  href="/"
+  className="font-serif text-4xl font-medium tracking-[-0.03em] text-[#f4f1e9]"
+>
+  Crime Recordings
+</Link>
 
   <nav
     className="site-nav"
