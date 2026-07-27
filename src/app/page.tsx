@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import PublicMediaPlayer from "@/app/cases/[slug]/public-media-player";
+import HomepageFeaturedVideo from "./homepage-featured-video";
 
 const RECORDING_TYPES = [
   "Interviews",
@@ -140,10 +140,10 @@ export default async function Home() {
           <Image
             src="/crime-recordings-logo.png"
             alt="Crime Recordings"
-            width={270}
-            height={180}
+            width={440}
+            height={294}
             priority
-            className="site-logo"
+            className="site-logo h-auto w-[300px] md:w-[380px] lg:w-[440px]"
           />
         </Link>
 
@@ -174,65 +174,67 @@ export default async function Home() {
       {featuredRecording && featuredCase ? (
         <section
           id="top"
-          className="bg-[#080b0f] px-0 pb-16 pt-36 text-[#f4f1e9] md:pb-24 md:pt-40"
+          className="bg-[#080b0f] pb-16 pt-32 text-[#f4f1e9] md:pb-24 md:pt-40"
         >
           <div className="mx-auto max-w-[1600px]">
-            <div className="px-5 pb-9 md:px-10 lg:px-16">
-              <p className="mb-4 text-xs font-extrabold uppercase tracking-[0.24em] text-[#e1c58f]">
-                Featured public recording
+            <div className="px-5 pb-10 md:px-10 lg:px-16">
+              <p className="mb-5 text-xs font-extrabold uppercase tracking-[0.24em] text-[#e1c58f]">
+                Original public-record media
               </p>
 
-              <div className="grid gap-7 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
-                <div>
-                  <h1 className="m-0 max-w-6xl font-serif text-[clamp(3.5rem,8vw,8rem)] font-medium leading-[0.9] tracking-[-0.055em]">
-                    {featuredCase.title}
-                  </h1>
+              <p className="m-0 max-w-5xl font-serif text-[clamp(2.2rem,5vw,5.5rem)] font-medium leading-[1.02] tracking-[-0.04em] text-[#f4f1e9]">
+                Real cases. Real interrogations. Raw footage.
+              </p>
 
-                  <p className="mt-6 max-w-4xl font-serif text-2xl leading-9 text-[#c8cbd0] md:text-3xl">
-                    {featuredRecording.title}
-                  </p>
-                </div>
+              <p className="mt-7 max-w-4xl text-lg leading-8 text-[#b8bcc2] md:text-xl md:leading-9">
+                Crime Recordings presents original interviews,
+                interrogations, emergency calls, body-camera
+                footage, dispatch audio, courtroom recordings,
+                and other official media obtained from
+                public-record sources.
+              </p>
+            </div>
 
-                <div className="border-l border-[#c8a66a]/40 pl-6 text-sm leading-7 text-[#a8adb5]">
-                  <p className="m-0">
+            <HomepageFeaturedVideo
+              recordingId={featuredRecording.id}
+              title={featuredRecording.title}
+            />
+
+            <div className="grid gap-8 px-5 pt-9 md:px-10 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center lg:px-16">
+              <div>
+                <p className="m-0 text-xs font-extrabold uppercase tracking-[0.18em] text-[#e1c58f]">
+                  Featured public recording
+                </p>
+
+                <h2 className="mt-3 font-serif text-3xl font-medium text-[#f4f1e9] md:text-4xl">
+                  {featuredRecording.title}
+                </h2>
+
+                <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm text-[#747b84]">
+                  <span>
                     {formatDate(
                       featuredCase.incident_date,
                     )}
-                  </p>
+                  </span>
 
                   {featuredLocation ? (
-                    <p className="m-0">
-                      {featuredLocation}
-                    </p>
+                    <span>{featuredLocation}</span>
                   ) : null}
                 </div>
+
+                <p className="mt-5 max-w-4xl text-base leading-8 text-[#a8adb5] md:text-lg">
+                  {featuredCase.summary ??
+                    "Watch this featured public-record video and explore the complete documented case archive."}
+                </p>
               </div>
-            </div>
 
-            <PublicMediaPlayer
-              recordingId={featuredRecording.id}
-              title={featuredRecording.title}
-              mimeType={
-                featuredRecording.mime_type
-              }
-              accessLevel={
-                featuredRecording.access_level
-              }
-              featured
-            />
-
-            <div className="grid gap-7 px-5 pt-9 md:px-10 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center lg:px-16">
-              <p className="m-0 max-w-4xl text-base leading-8 text-[#a8adb5] md:text-lg">
-                {featuredCase.summary ??
-                  "Watch this featured public-record video and explore the complete documented case archive."}
-              </p>
-
-              <div className="flex flex-col gap-3 sm:flex-row">
+              <div className="flex flex-col gap-3 sm:flex-row lg:flex-col">
                 <Link
                   href={`/cases/${featuredCase.slug}`}
                   className="inline-flex min-h-14 items-center justify-center border border-[#c8a66a] bg-[#c8a66a] px-7 text-xs font-extrabold uppercase tracking-[0.1em] text-[#111318] transition hover:bg-[#e1c58f]"
                 >
                   View complete case
+
                   <span
                     className="ml-4"
                     aria-hidden="true"
@@ -242,10 +244,10 @@ export default async function Home() {
                 </Link>
 
                 <Link
-                  href="/membership"
+                  href="/cases"
                   className="inline-flex min-h-14 items-center justify-center border border-[#c8a66a] px-7 text-xs font-extrabold uppercase tracking-[0.1em] text-[#e1c58f] transition hover:bg-[#c8a66a]/10"
                 >
-                  Join for $2.99/month
+                  Browse the archive
                 </Link>
               </div>
             </div>
@@ -264,16 +266,17 @@ export default async function Home() {
             </p>
 
             <h1>
-              See the records
-              <span>behind the cases.</span>
+              Real cases.
+              <span>Real recordings.</span>
             </h1>
 
             <p className="hero-description">
+              Real cases. Real interrogations. Raw footage.
               Crime Recordings presents interviews,
               interrogations, emergency calls, body-camera
-              footage, dispatch audio, and other official
-              recordings obtained through public-records
-              requests.
+              footage, dispatch audio, courtroom recordings,
+              and other official media obtained through
+              public-record requests.
             </p>
 
             <div className="hero-actions">
@@ -282,7 +285,10 @@ export default async function Home() {
                 href="/cases"
               >
                 Explore the archive
-                <span aria-hidden="true">→</span>
+
+                <span aria-hidden="true">
+                  →
+                </span>
               </Link>
 
               <Link
@@ -339,6 +345,7 @@ export default async function Home() {
 
               <div>
                 <dt>Status</dt>
+
                 <dd>
                   <span className="status-dot" />
                   Archive active
@@ -428,7 +435,10 @@ export default async function Home() {
             href="/cases"
           >
             Browse published cases
-            <span aria-hidden="true">→</span>
+
+            <span aria-hidden="true">
+              →
+            </span>
           </Link>
         </div>
       </section>
@@ -504,46 +514,55 @@ export default async function Home() {
         </div>
       </section>
 
-     <footer className="site-footer">
-  <div className="footer-brand">
-    <Image
-      src="/crime-recordings-logo.png"
-      alt="Crime Recordings"
-      width={240}
-      height={160}
-      className="footer-logo"
-    />
+      <footer className="site-footer">
+        <div className="footer-brand">
+          <Image
+            src="/crime-recordings-logo.png"
+            alt="Crime Recordings"
+            width={240}
+            height={160}
+            className="footer-logo"
+          />
 
-    <p>Real cases. Original recordings.</p>
-  </div>
+          <p>
+            Real cases. Original recordings.
+          </p>
+        </div>
 
-  <div className="flex flex-col gap-4 text-sm">
-    <nav
-      className="flex flex-wrap gap-x-6 gap-y-3"
-      aria-label="Footer navigation"
-    >
-      <Link href="/cases">Cases</Link>
-      <Link href="/membership">Membership</Link>
-      <Link href="/account">My Account</Link>
-      <Link href="/privacy">Privacy</Link>
-      <Link href="/terms">Terms</Link>
-    </nav>
+        <div className="flex flex-col gap-4 text-sm">
+          <nav
+            className="flex flex-wrap gap-x-6 gap-y-3"
+            aria-label="Footer navigation"
+          >
+            <Link href="/cases">
+              Cases
+            </Link>
 
-    <div className="flex flex-col gap-2">
-      <p>
-        © {new Date().getFullYear()} Crime Recordings — A Stabile USA
-        Project
-      </p>
+            <Link href="/membership">
+              Membership
+            </Link>
 
-      
-        .
-    
-    </div>
-  </div>
-</footer>
+            <Link href="/account">
+              My Account
+            </Link>
 
-  
+            <Link href="/privacy">
+              Privacy
+            </Link>
 
+            <Link href="/terms">
+              Terms
+            </Link>
+          </nav>
+
+          <div className="flex flex-col gap-2">
+            <p>
+              © {new Date().getFullYear()} Crime Recordings
+              {" "}— A Stabile USA Project
+            </p>
+          </div>
+        </div>
+      </footer>
     </main>
   );
 }
