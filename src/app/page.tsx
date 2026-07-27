@@ -143,7 +143,7 @@ export default async function Home() {
     className="site-nav"
     aria-label="Primary navigation"
   >
-    <a href="#about">About</a>
+   
 
     <Link href="/cases">
       The Archive
