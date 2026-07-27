@@ -132,22 +132,13 @@ export default async function Home() {
   return (
     <main>
       <header className="site-header">
-  <div className="logo-banner">
-    <Link
-      className="brand"
-      href="/"
-      aria-label="Crime Recordings home"
-    >
-      <Image
-        src="/crime-recordings-logo.png"
-        alt="Crime Recordings"
-        width={600}
-        height={400}
-        priority
-        className="site-logo"
-      />
-    </Link>
-  </div>
+  <Link
+    href="/"
+    className="brand-text"
+    aria-label="Crime Recordings home"
+  >
+    Crime Recordings
+  </Link>
 
   <nav
     className="site-nav"
@@ -172,6 +163,9 @@ export default async function Home() {
     </Link>
   </nav>
 </header>
+ 
+  
+   
    
         
 
