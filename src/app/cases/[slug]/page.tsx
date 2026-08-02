@@ -495,6 +495,21 @@ export default async function PublicCasePage({
               The documented record
             </h2>
 
+            <div className="mt-5 max-w-4xl border-l border-white/15 pl-5">
+  <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-[#a8adb5]">
+    About the recording order
+  </p>
+
+  <p className="mt-3 text-sm leading-7 text-[#9fa4ab]">
+    We make every effort to present files in chronological order.
+    However, records may be received in separate releases, and some
+    audio, video, and documents require significant time to review and
+    identify accurately. For that reason, certain files may temporarily
+    appear out of sequence. The order will be updated as additional
+    records are received and the case archive is reviewed.
+  </p>
+</div>
+
             <div className="mt-8 max-w-4xl space-y-7 text-lg leading-9 text-[#b8bcc2]">
               <p>
                 {caseItem.summary ??
