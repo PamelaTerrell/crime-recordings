@@ -30,9 +30,12 @@ const allowedMediaTypes = new Set([
   "image/webp",
   "image/gif",
   "image/avif",
+
+  // Documents
+  "application/pdf",
 ]);
 
-type UploadCategory = "recordings" | "images";
+type UploadCategory = "recordings" | "images" | "documents";
 
 function sanitizeFilename(filename: string) {
   const extension = filename.includes(".")
@@ -56,7 +59,8 @@ function determineUploadCategory(
 ): UploadCategory | null {
   if (
     requestedCategory === "recordings" ||
-    requestedCategory === "images"
+    requestedCategory === "images" ||
+    requestedCategory === "documents"
   ) {
     return requestedCategory;
   }
@@ -70,6 +74,10 @@ function determineUploadCategory(
 
   if (contentType.startsWith("image/")) {
     return "images";
+  }
+
+  if (contentType === "application/pdf") {
+    return "documents";
   }
 
   return null;
@@ -158,7 +166,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           error:
-            "Please select a supported audio, video, or image file.",
+            "Please select a supported audio, video, image, or PDF file.",
         },
         { status: 400 },
       );
@@ -197,6 +205,19 @@ export async function POST(request: Request) {
         {
           error:
             "Only image files can be uploaded as case images.",
+        },
+        { status: 400 },
+      );
+    }
+
+    if (
+      uploadCategory === "documents" &&
+      contentType !== "application/pdf"
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Only PDF files can currently be uploaded as documents.",
         },
         { status: 400 },
       );
