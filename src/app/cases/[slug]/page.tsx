@@ -128,9 +128,91 @@ async function getPublishedCase(slug: string) {
     }),
   );
 
+  const {
+    data: documents,
+    error: documentsError,
+  } = await supabase
+    .from("case_documents")
+    .select(
+      `
+        id,
+        title,
+        description,
+        source_name,
+        source_reference,
+        document_date,
+        original_filename,
+        mime_type,
+        file_size_bytes,
+        access_level,
+        is_sensitive,
+        sort_order,
+        object_key,
+        created_at
+      `,
+    )
+    .eq("case_id", caseItem.id)
+    .eq("is_published", true)
+    .eq("access_level", "public")
+    .order("sort_order", {
+      ascending: true,
+    })
+    .order("created_at", {
+      ascending: true,
+    });
+
+  if (documentsError) {
+    throw new Error(
+      `Unable to load case documents: ${documentsError.message}`,
+    );
+  }
+
+  const documentsWithUrls = await Promise.all(
+    (documents ?? []).map(async (document) => {
+      try {
+        const safeFilename =
+          document.original_filename
+            ?.replace(/["\r\n]/g, "")
+            .trim() || "case-document.pdf";
+
+        const command = new GetObjectCommand({
+          Bucket: r2BucketName,
+          Key: document.object_key,
+          ResponseContentType: "application/pdf",
+          ResponseContentDisposition:
+            `inline; filename="${safeFilename}"`,
+        });
+
+        const documentUrl = await getSignedUrl(
+          r2Client,
+          command,
+          {
+            expiresIn: 60 * 60,
+          },
+        );
+
+        return {
+          ...document,
+          document_url: documentUrl,
+        };
+      } catch (documentError) {
+        console.error(
+          `Unable to prepare document ${document.id}:`,
+          documentError,
+        );
+
+        return {
+          ...document,
+          document_url: null,
+        };
+      }
+    }),
+  );
+
   return {
     caseItem,
     recordings: recordingsWithThumbnails,
+    documents: documentsWithUrls,
   };
 }
 
@@ -198,7 +280,9 @@ function formatDuration(seconds: number | null) {
   }
 
   const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
+  const minutes = Math.floor(
+    (seconds % 3600) / 60,
+  );
   const remainingSeconds = seconds % 60;
 
   if (hours > 0) {
@@ -208,10 +292,34 @@ function formatDuration(seconds: number | null) {
     )}:${String(remainingSeconds).padStart(2, "0")}`;
   }
 
-  return `${minutes}:${String(remainingSeconds).padStart(
-    2,
-    "0",
-  )}`;
+  return `${minutes}:${String(
+    remainingSeconds,
+  ).padStart(2, "0")}`;
+}
+
+function formatFileSize(bytes: number | null) {
+  if (bytes === null) {
+    return null;
+  }
+
+  if (bytes < 1024) {
+    return `${bytes} bytes`;
+  }
+
+  if (bytes < 1024 * 1024) {
+    return `${(bytes / 1024).toFixed(1)} KB`;
+  }
+
+  if (bytes < 1024 * 1024 * 1024) {
+    return `${(bytes / (1024 * 1024)).toFixed(
+      1,
+    )} MB`;
+  }
+
+  return `${(
+    bytes /
+    (1024 * 1024 * 1024)
+  ).toFixed(2)} GB`;
 }
 
 export default async function PublicCasePage({
@@ -224,10 +332,15 @@ export default async function PublicCasePage({
     notFound();
   }
 
-  const { caseItem, recordings } = result;
+  const {
+    caseItem,
+    recordings,
+    documents,
+  } = result;
 
   const memberRecordings = recordings.filter(
-    (recording) => recording.access_level === "member",
+    (recording) =>
+      recording.access_level === "member",
   );
 
   const location =
@@ -295,6 +408,15 @@ export default async function PublicCasePage({
                 ? "recording"
                 : "recordings"}
             </span>
+
+            {documents.length > 0 ? (
+              <span>
+                {documents.length} published{" "}
+                {documents.length === 1
+                  ? "document"
+                  : "documents"}
+              </span>
+            ) : null}
           </div>
         </div>
       </section>
@@ -312,9 +434,10 @@ export default async function PublicCasePage({
           {memberRecordings.length > 0 ? (
             <div className="mt-5 max-w-4xl border-l border-[#c8a66a] pl-5">
               <p className="text-base leading-7 text-[#b8bcc2]">
-                The first recording in this case is available
-                publicly. Additional recordings are available with
-                a Crime Recordings membership.
+                The first recording in this case is
+                available publicly. Additional recordings
+                are available with a Crime Recordings
+                membership.
               </p>
 
               <div className="mt-4 flex flex-wrap gap-4 text-xs font-extrabold uppercase tracking-[0.1em]">
@@ -337,91 +460,109 @@ export default async function PublicCasePage({
 
           {recordings.length > 0 ? (
             <div className="mt-8 grid gap-7">
-              {recordings.map((recording, index) => {
-                const formattedDuration = formatDuration(
-                  recording.duration_seconds,
-                );
+              {recordings.map(
+                (recording, index) => {
+                  const formattedDuration =
+                    formatDuration(
+                      recording.duration_seconds,
+                    );
 
-                return (
-                  <article
-                    key={recording.id}
-                    className="grid gap-5 border-t border-white/10 pt-6 lg:grid-cols-[90px_minmax(0,1fr)]"
-                  >
-                    <div className="font-serif text-3xl text-[#c8a66a]">
-                      {String(index + 1).padStart(2, "0")}
-                    </div>
-
-                    <div
-                      className={`grid gap-6 ${
-                        recording.thumbnail_url
-                          ? "md:grid-cols-[325px_minmax(0,1fr)]"
-                          : ""
-                      }`}
+                  return (
+                    <article
+                      key={recording.id}
+                      className="grid gap-5 border-t border-white/10 pt-6 lg:grid-cols-[90px_minmax(0,1fr)]"
                     >
-                      {recording.thumbnail_url ? (
-                        <div className="h-[183px] w-full self-start overflow-hidden border border-white/10 bg-black md:w-[325px]">
-                          <img
-                            src={recording.thumbnail_url}
-                            alt={`Thumbnail for ${recording.title}`}
-                            className="h-full w-full object-cover object-center"
-                          />
-                        </div>
-                      ) : null}
+                      <div className="font-serif text-3xl text-[#c8a66a]">
+                        {String(index + 1).padStart(
+                          2,
+                          "0",
+                        )}
+                      </div>
 
-                      <div className="min-w-0">
-                        <div className="mb-4 flex flex-wrap gap-2">
-                          <span className="border border-[#c8a66a]/40 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#e1c58f]">
-                            {formatRecordingType(
-                              recording.recording_type,
-                            )}
-                          </span>
-
-                          <span className="border border-white/10 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#a8adb5]">
-                            {recording.mime_type?.startsWith(
-                              "video/",
-                            )
-                              ? "Video"
-                              : "Audio"}
-                          </span>
-
-                          <span className="border border-white/10 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#a8adb5]">
-                            {recording.access_level === "public"
-                              ? "Public"
-                              : "Members only"}
-                          </span>
-
-                          {formattedDuration ? (
-                            <span className="border border-white/10 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#a8adb5]">
-                              {formattedDuration}
-                            </span>
-                          ) : null}
-                        </div>
-
-                        <h3 className="m-0 font-serif text-3xl font-medium md:text-4xl">
-                          {recording.title}
-                        </h3>
-
-                        {recording.file_summary ? (
-                          <p className="mt-4 max-w-3xl text-base leading-7 text-[#b8bcc2]">
-                            {recording.file_summary}
-                          </p>
+                      <div
+                        className={`grid gap-6 ${
+                          recording.thumbnail_url
+                            ? "md:grid-cols-[325px_minmax(0,1fr)]"
+                            : ""
+                        }`}
+                      >
+                        {recording.thumbnail_url ? (
+                          <div className="h-[183px] w-full self-start overflow-hidden border border-white/10 bg-black md:w-[325px]">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={
+                                recording.thumbnail_url
+                              }
+                              alt={`Thumbnail for ${recording.title}`}
+                              className="h-full w-full object-cover object-center"
+                            />
+                          </div>
                         ) : null}
 
-                        <div className="mt-6">
-                          <PublicMediaPlayer
-                            recordingId={recording.id}
-                            title={recording.title}
-                            mimeType={recording.mime_type}
-                            accessLevel={
-                              recording.access_level
-                            }
-                          />
+                        <div className="min-w-0">
+                          <div className="mb-4 flex flex-wrap gap-2">
+                            <span className="border border-[#c8a66a]/40 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#e1c58f]">
+                              {formatRecordingType(
+                                recording.recording_type,
+                              )}
+                            </span>
+
+                            <span className="border border-white/10 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#a8adb5]">
+                              {recording.mime_type?.startsWith(
+                                "video/",
+                              )
+                                ? "Video"
+                                : "Audio"}
+                            </span>
+
+                            <span className="border border-white/10 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#a8adb5]">
+                              {recording.access_level ===
+                              "public"
+                                ? "Public"
+                                : "Members only"}
+                            </span>
+
+                            {formattedDuration ? (
+                              <span className="border border-white/10 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#a8adb5]">
+                                {formattedDuration}
+                              </span>
+                            ) : null}
+                          </div>
+
+                          <h3 className="m-0 font-serif text-3xl font-medium md:text-4xl">
+                            {recording.title}
+                          </h3>
+
+                          {recording.file_summary ? (
+                            <p className="mt-4 max-w-3xl text-base leading-7 text-[#b8bcc2]">
+                              {
+                                recording.file_summary
+                              }
+                            </p>
+                          ) : null}
+
+                          <div className="mt-6">
+                            <PublicMediaPlayer
+                              recordingId={
+                                recording.id
+                              }
+                              title={
+                                recording.title
+                              }
+                              mimeType={
+                                recording.mime_type
+                              }
+                              accessLevel={
+                                recording.access_level
+                              }
+                            />
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </article>
-                );
-              })}
+                    </article>
+                  );
+                },
+              )}
             </div>
           ) : (
             <p className="mt-10 text-lg text-[#a8adb5]">
@@ -432,6 +573,140 @@ export default async function PublicCasePage({
       </section>
 
       <CaseImageGallery caseId={caseItem.id} />
+
+      {documents.length > 0 ? (
+        <section className="border-t border-white/10 bg-[#0b0f14] px-5 py-12 md:px-10 lg:px-16 lg:py-16">
+          <div className="mx-auto max-w-[1500px]">
+            <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-[#e1c58f]">
+              Case documents
+            </p>
+
+            <h2 className="mt-3 font-serif text-4xl font-medium md:text-5xl">
+              Reports and exhibits
+            </h2>
+
+            <p className="mt-4 max-w-3xl leading-7 text-[#a8adb5]">
+              Public-record reports, presentations,
+              exhibits, and other documentary materials
+              associated with this case.
+            </p>
+
+            <div className="mt-9 grid gap-6">
+              {documents.map(
+                (document, index) => {
+                  const fileSize =
+                    formatFileSize(
+                      document.file_size_bytes,
+                    );
+
+                  return (
+                    <article
+                      key={document.id}
+                      className="grid gap-5 border-t border-white/10 pt-6 md:grid-cols-[70px_minmax(0,1fr)_auto] md:items-start"
+                    >
+                      <div className="font-serif text-3xl text-[#c8a66a]">
+                        {String(
+                          index + 1,
+                        ).padStart(2, "0")}
+                      </div>
+
+                      <div className="min-w-0">
+                        <div className="mb-3 flex flex-wrap gap-2">
+                          <span className="border border-[#c8a66a]/40 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#e1c58f]">
+                            PDF document
+                          </span>
+
+                          <span className="border border-white/10 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#a8adb5]">
+                            Public
+                          </span>
+
+                          {fileSize ? (
+                            <span className="border border-white/10 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#a8adb5]">
+                              {fileSize}
+                            </span>
+                          ) : null}
+
+                          {document.document_date ? (
+                            <span className="border border-white/10 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#a8adb5]">
+                              {formatDate(
+                                document.document_date,
+                              )}
+                            </span>
+                          ) : null}
+
+                          {document.is_sensitive ? (
+                            <span className="border border-red-400/30 bg-red-400/10 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.12em] text-red-200">
+                              Sensitive material
+                            </span>
+                          ) : null}
+                        </div>
+
+                        <h3 className="m-0 font-serif text-3xl font-medium text-[#f4f1e9] md:text-4xl">
+                          {document.title}
+                        </h3>
+
+                        {document.description ? (
+                          <p className="mt-4 max-w-3xl leading-7 text-[#b8bcc2]">
+                            {
+                              document.description
+                            }
+                          </p>
+                        ) : null}
+
+                        {(document.source_name ||
+                          document.source_reference) ? (
+                          <div className="mt-4 text-sm leading-6 text-[#8f959e]">
+                            {document.source_name ? (
+                              <p>
+                                <strong className="text-[#c8cbd0]">
+                                  Source:
+                                </strong>{" "}
+                                {
+                                  document.source_name
+                                }
+                              </p>
+                            ) : null}
+
+                            {document.source_reference ? (
+                              <p>
+                                <strong className="text-[#c8cbd0]">
+                                  Reference:
+                                </strong>{" "}
+                                {
+                                  document.source_reference
+                                }
+                              </p>
+                            ) : null}
+                          </div>
+                        ) : null}
+                      </div>
+
+                      <div className="md:pt-1">
+                        {document.document_url ? (
+                          <a
+                            href={
+                              document.document_url
+                            }
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex min-h-12 w-full items-center justify-center border border-[#c8a66a] px-5 text-xs font-extrabold uppercase tracking-[0.1em] text-[#e1c58f] transition hover:bg-[#c8a66a] hover:text-[#111318] md:w-auto"
+                          >
+                            View PDF
+                          </a>
+                        ) : (
+                          <span className="text-sm text-[#747b84]">
+                            Document unavailable
+                          </span>
+                        )}
+                      </div>
+                    </article>
+                  );
+                },
+              )}
+            </div>
+          </div>
+        </section>
+      ) : null}
 
       <section
         id="case-overview"
@@ -450,7 +725,8 @@ export default async function PublicCasePage({
                 </dt>
 
                 <dd className="mt-2 whitespace-pre-wrap text-base leading-7 text-[#d8d9dc]">
-                  {caseItem.victim_names ?? "Not listed"}
+                  {caseItem.victim_names ??
+                    "Not listed"}
                 </dd>
               </div>
 
@@ -460,7 +736,8 @@ export default async function PublicCasePage({
                 </dt>
 
                 <dd className="mt-2 whitespace-pre-wrap text-base leading-7 text-[#d8d9dc]">
-                  {caseItem.accused_names ?? "Not listed"}
+                  {caseItem.accused_names ??
+                    "Not listed"}
                 </dd>
               </div>
 
@@ -470,7 +747,9 @@ export default async function PublicCasePage({
                 </dt>
 
                 <dd className="mt-2 text-base text-[#d8d9dc]">
-                  {formatDate(caseItem.incident_date)}
+                  {formatDate(
+                    caseItem.incident_date,
+                  )}
                 </dd>
               </div>
 
@@ -496,19 +775,23 @@ export default async function PublicCasePage({
             </h2>
 
             <div className="mt-5 max-w-4xl border-l border-white/15 pl-5">
-  <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-[#a8adb5]">
-    About the recording order
-  </p>
+              <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-[#a8adb5]">
+                About the recording order
+              </p>
 
-  <p className="mt-3 text-sm leading-7 text-[#9fa4ab]">
-    We make every effort to present files in chronological order.
-    However, records may be received in separate releases, and some
-    audio, video, and documents require significant time to review and
-    identify accurately. For that reason, certain files may temporarily
-    appear out of sequence. The order will be updated as additional
-    records are received and the case archive is reviewed.
-  </p>
-</div>
+              <p className="mt-3 text-sm leading-7 text-[#9fa4ab]">
+                We make every effort to present files in
+                chronological order. However, records may be
+                received in separate releases, and some
+                audio, video, and documents require
+                significant time to review and identify
+                accurately. For that reason, certain files
+                may temporarily appear out of sequence. The
+                order will be updated as additional records
+                are received and the case archive is
+                reviewed.
+              </p>
+            </div>
 
             <div className="mt-8 max-w-4xl space-y-7 text-lg leading-9 text-[#b8bcc2]">
               <p>
@@ -540,7 +823,8 @@ export default async function PublicCasePage({
 
       <footer className="flex flex-col justify-between gap-5 border-t border-white/10 px-5 py-10 text-sm text-[#747b84] md:flex-row md:px-10 lg:px-16">
         <p className="m-0">
-          Crime Recordings · Public-record documentary archive
+          Crime Recordings · Public-record documentary
+          archive
         </p>
 
         <Link
