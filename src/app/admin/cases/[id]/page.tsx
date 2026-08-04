@@ -144,50 +144,54 @@ export default async function AdminCasePage({
         ← Back to case archive
       </Link>
 
-      <div className="admin-case-detail-heading">
-        <div>
-          <p className="admin-eyebrow">
-            {caseItem.case_status} case
-          </p>
+    <div className="admin-case-detail-heading">
+  <div>
+    <p className="admin-eyebrow">
+      {caseItem.case_status} case
+    </p>
 
-          <h1>{caseItem.title}</h1>
+    <h1>{caseItem.title}</h1>
 
-          {caseItem.subtitle ? <p>{caseItem.subtitle}</p> : null}
-        </div>
+    {caseItem.subtitle ? <p>{caseItem.subtitle}</p> : null}
+  </div>
 
-        <div className="admin-case-heading-actions">
-  <span className="admin-status">
-    {caseItem.case_status}
-  </span>
+  <div className="admin-case-heading-actions">
+    <span className="admin-status">
+      {caseItem.case_status}
+    </span>
 
-  <Link
-    href={`/admin/cases/${caseItem.id}/recordings/new`}
-    className="admin-primary-link"
-  >
-    Add media
-  </Link>
+    <Link
+      href={`/admin/cases/${caseItem.id}/recordings/new`}
+      className="admin-primary-link"
+    >
+      Add media
+    </Link>
 
-  <Link
-    href={`/admin/cases/${caseItem.id}/images/new`}
-    className="admin-primary-link"
-  >
-    Add images
-  </Link>
+    <Link
+      href={`/admin/cases/${caseItem.id}/images/new`}
+      className="admin-primary-link"
+    >
+      Add images
+    </Link>
 
-  <Link
-    href={`/admin/cases/${caseItem.id}/documents/new`}
-    className="admin-primary-link"
-  >
-    Add documents
-  </Link>
+    <Link
+      href={`/admin/cases/${caseItem.id}/documents/new`}
+      className="admin-primary-link"
+    >
+      Add documents
+    </Link>
 
-  <Link
-    href={`/admin/cases/${caseItem.id}/edit`}
-    className="admin-primary-link"
-  >
-    Edit case
-  </Link>
+    <Link
+      href={`/admin/cases/${caseItem.id}/edit`}
+      className="admin-primary-link"
+    >
+      Edit case
+    </Link>
+  </div>
 </div>
+
+<div className="admin-detail-grid"></div>
+  
 
       <div className="admin-detail-grid">
         <article className="admin-detail-card">
