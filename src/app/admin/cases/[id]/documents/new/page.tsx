@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import DocumentUploadForm from "@/components/DocumentUploadForm";
+import DocumentUploadForm from "./DocumentUploadForm";
 import { createClient } from "@/lib/supabase/server";
 
 type NewDocumentPageProps = {
