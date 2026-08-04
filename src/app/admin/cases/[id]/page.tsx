@@ -190,7 +190,7 @@ export default async function AdminCasePage({
   </div>
 </div>
 
-<div className="admin-detail-grid"></div>
+
   
 
       <div className="admin-detail-grid">
