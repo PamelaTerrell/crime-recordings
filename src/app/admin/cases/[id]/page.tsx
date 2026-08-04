@@ -156,32 +156,38 @@ export default async function AdminCasePage({
         </div>
 
         <div className="admin-case-heading-actions">
-          <span className="admin-status">
-            {caseItem.case_status}
-          </span>
+  <span className="admin-status">
+    {caseItem.case_status}
+  </span>
 
-          <Link
-            href={`/admin/cases/${caseItem.id}/recordings/new`}
-            className="admin-primary-link"
-          >
-            Add media
-          </Link>
+  <Link
+    href={`/admin/cases/${caseItem.id}/recordings/new`}
+    className="admin-primary-link"
+  >
+    Add media
+  </Link>
 
-          <Link
-            href={`/admin/cases/${caseItem.id}/images/new`}
-            className="admin-primary-link"
-          >
-            Add images
-          </Link>
+  <Link
+    href={`/admin/cases/${caseItem.id}/images/new`}
+    className="admin-primary-link"
+  >
+    Add images
+  </Link>
 
-          <Link
-            href={`/admin/cases/${caseItem.id}/edit`}
-            className="admin-primary-link"
-          >
-            Edit case
-          </Link>
-        </div>
-      </div>
+  <Link
+    href={`/admin/cases/${caseItem.id}/documents/new`}
+    className="admin-primary-link"
+  >
+    Add documents
+  </Link>
+
+  <Link
+    href={`/admin/cases/${caseItem.id}/edit`}
+    className="admin-primary-link"
+  >
+    Edit case
+  </Link>
+</div>
 
       <div className="admin-detail-grid">
         <article className="admin-detail-card">
