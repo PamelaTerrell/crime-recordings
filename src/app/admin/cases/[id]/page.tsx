@@ -10,21 +10,32 @@ function formatFileSize(bytes: number | null) {
     return null;
   }
 
+  if (bytes < 1024) {
+    return `${bytes} bytes`;
+  }
+
   if (bytes < 1024 * 1024) {
     return `${(bytes / 1024).toFixed(1)} KB`;
   }
 
   if (bytes < 1024 * 1024 * 1024) {
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    return `${(bytes / (1024 * 1024)).toFixed(
+      1,
+    )} MB`;
   }
 
-  return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+  return `${(
+    bytes /
+    (1024 * 1024 * 1024)
+  ).toFixed(2)} GB`;
 }
 
 export default async function AdminCasePage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{
+    id: string;
+  }>;
 }) {
   const { id } = await params;
   const supabase = await createClient();
@@ -59,8 +70,10 @@ export default async function AdminCasePage({
     notFound();
   }
 
-  const { data: recordings, error: recordingsError } =
-  await supabase
+  const {
+    data: recordings,
+    error: recordingsError,
+  } = await supabase
     .from("recordings")
     .select(
       `
@@ -87,7 +100,6 @@ export default async function AdminCasePage({
     .order("created_at", {
       ascending: true,
     });
-   
 
   if (recordingsError) {
     throw new Error(
@@ -95,7 +107,10 @@ export default async function AdminCasePage({
     );
   }
 
-  const { data: caseImages, error: caseImagesError } = await supabase
+  const {
+    data: caseImages,
+    error: caseImagesError,
+  } = await supabase
     .from("case_images")
     .select(
       `
@@ -129,6 +144,43 @@ export default async function AdminCasePage({
     );
   }
 
+  const {
+    data: caseDocuments,
+    error: caseDocumentsError,
+  } = await supabase
+    .from("case_documents")
+    .select(
+      `
+        id,
+        title,
+        description,
+        source_name,
+        source_reference,
+        document_date,
+        original_filename,
+        mime_type,
+        file_size_bytes,
+        access_level,
+        is_published,
+        is_sensitive,
+        sort_order,
+        created_at
+      `,
+    )
+    .eq("case_id", caseItem.id)
+    .order("sort_order", {
+      ascending: true,
+    })
+    .order("created_at", {
+      ascending: true,
+    });
+
+  if (caseDocumentsError) {
+    throw new Error(
+      `Unable to load case documents: ${caseDocumentsError.message}`,
+    );
+  }
+
   const location =
     [
       caseItem.location_city,
@@ -140,58 +192,60 @@ export default async function AdminCasePage({
 
   return (
     <section>
-      <Link href="/admin" className="admin-back-link">
+      <Link
+        href="/admin"
+        className="admin-back-link"
+      >
         ← Back to case archive
       </Link>
 
-    <div className="admin-case-detail-heading">
-  <div>
-    <p className="admin-eyebrow">
-      {caseItem.case_status} case
-    </p>
+      <div className="admin-case-detail-heading">
+        <div>
+          <p className="admin-eyebrow">
+            {caseItem.case_status} case
+          </p>
 
-    <h1>{caseItem.title}</h1>
+          <h1>{caseItem.title}</h1>
 
-    {caseItem.subtitle ? <p>{caseItem.subtitle}</p> : null}
-  </div>
+          {caseItem.subtitle ? (
+            <p>{caseItem.subtitle}</p>
+          ) : null}
+        </div>
 
-  <div className="admin-case-heading-actions">
-    <span className="admin-status">
-      {caseItem.case_status}
-    </span>
+        <div className="admin-case-heading-actions">
+          <span className="admin-status">
+            {caseItem.case_status}
+          </span>
 
-    <Link
-      href={`/admin/cases/${caseItem.id}/recordings/new`}
-      className="admin-primary-link"
-    >
-      Add media
-    </Link>
+          <Link
+            href={`/admin/cases/${caseItem.id}/recordings/new`}
+            className="admin-primary-link"
+          >
+            Add media
+          </Link>
 
-    <Link
-      href={`/admin/cases/${caseItem.id}/images/new`}
-      className="admin-primary-link"
-    >
-      Add images
-    </Link>
+          <Link
+            href={`/admin/cases/${caseItem.id}/images/new`}
+            className="admin-primary-link"
+          >
+            Add images
+          </Link>
 
-    <Link
-      href={`/admin/cases/${caseItem.id}/documents/new`}
-      className="admin-primary-link"
-    >
-      Add documents
-    </Link>
+          <Link
+            href={`/admin/cases/${caseItem.id}/documents/new`}
+            className="admin-primary-link"
+          >
+            Add documents
+          </Link>
 
-    <Link
-      href={`/admin/cases/${caseItem.id}/edit`}
-      className="admin-primary-link"
-    >
-      Edit case
-    </Link>
-  </div>
-</div>
-
-
-  
+          <Link
+            href={`/admin/cases/${caseItem.id}/edit`}
+            className="admin-primary-link"
+          >
+            Edit case
+          </Link>
+        </div>
+      </div>
 
       <div className="admin-detail-grid">
         <article className="admin-detail-card">
@@ -206,12 +260,21 @@ export default async function AdminCasePage({
 
         <article className="admin-detail-card">
           <span>Incident date</span>
-          <strong>{caseItem.incident_date ?? "Not entered"}</strong>
+
+          <strong>
+            {caseItem.incident_date ??
+              "Not entered"}
+          </strong>
         </article>
 
         <article className="admin-detail-card">
           <span>Featured</span>
-          <strong>{caseItem.is_featured ? "Yes" : "No"}</strong>
+
+          <strong>
+            {caseItem.is_featured
+              ? "Yes"
+              : "No"}
+          </strong>
         </article>
       </div>
 
@@ -226,7 +289,9 @@ export default async function AdminCasePage({
         </section>
 
         <section>
-          <h2>Accused or convicted person(s)</h2>
+          <h2>
+            Accused or convicted person(s)
+          </h2>
 
           <p>
             {caseItem.accused_names ??
@@ -237,7 +302,10 @@ export default async function AdminCasePage({
         <section>
           <h2>Summary</h2>
 
-          <p>{caseItem.summary ?? "No summary entered yet."}</p>
+          <p>
+            {caseItem.summary ??
+              "No summary entered yet."}
+          </p>
         </section>
 
         <section>
@@ -259,18 +327,24 @@ export default async function AdminCasePage({
         </section>
       </div>
 
+      {/* AUDIO AND VIDEO */}
+
       <section className="mt-9">
         <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
-            <p className="admin-eyebrow">Case media</p>
+            <p className="admin-eyebrow">
+              Case media
+            </p>
 
             <h2 className="m-0 font-serif text-4xl font-medium text-[#f4f1e9] md:text-5xl">
               Audio and video
             </h2>
 
             <p className="mt-4 max-w-2xl leading-7 text-[#a8adb5]">
-              Audio and video files remain private in Cloudflare R2.
-              Load the secure player to review each recording.
+              Audio and video files remain
+              private in Cloudflare R2. Load the
+              secure player to review each
+              recording.
             </p>
           </div>
 
@@ -282,50 +356,81 @@ export default async function AdminCasePage({
           </Link>
         </div>
 
-        {recordings && recordings.length > 0 ? (
+        {recordings &&
+        recordings.length > 0 ? (
           <div className="grid gap-4">
-            {recordings.map((recording) => (
-              <RecordingPlayer
-  key={recording.id}
-  caseId={caseItem.id}
-  recordingId={recording.id}
-  title={recording.title}
-  recordingType={recording.recording_type}
-  fileSummary={recording.file_summary}
-  durationSeconds={recording.duration_seconds}
-  thumbnailObjectKey={recording.thumbnail_object_key}
-  originalFilename={recording.original_filename}
-  mimeType={recording.mime_type}
-  fileSizeBytes={recording.file_size_bytes}
-  accessLevel={recording.access_level}
-  isPublished={recording.is_published}
-  isFeatured={recording.is_featured}
-  sortOrder={recording.sort_order}
-/>
-            ))}
+            {recordings.map(
+              (recording) => (
+                <RecordingPlayer
+                  key={recording.id}
+                  caseId={caseItem.id}
+                  recordingId={recording.id}
+                  title={recording.title}
+                  recordingType={
+                    recording.recording_type
+                  }
+                  fileSummary={
+                    recording.file_summary
+                  }
+                  durationSeconds={
+                    recording.duration_seconds
+                  }
+                  thumbnailObjectKey={
+                    recording.thumbnail_object_key
+                  }
+                  originalFilename={
+                    recording.original_filename
+                  }
+                  mimeType={
+                    recording.mime_type
+                  }
+                  fileSizeBytes={
+                    recording.file_size_bytes
+                  }
+                  accessLevel={
+                    recording.access_level
+                  }
+                  isPublished={
+                    recording.is_published
+                  }
+                  isFeatured={
+                    recording.is_featured
+                  }
+                  sortOrder={
+                    recording.sort_order
+                  }
+                />
+              ),
+            )}
           </div>
         ) : (
           <div className="border border-white/10 bg-[#10151b] p-7">
             <p className="m-0 text-[#a8adb5]">
-              No audio or video has been added to this case yet.
+              No audio or video has been
+              added to this case yet.
             </p>
           </div>
         )}
       </section>
 
+      {/* CASE IMAGES */}
+
       <section className="mt-9">
         <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
-            <p className="admin-eyebrow">Case records</p>
+            <p className="admin-eyebrow">
+              Case records
+            </p>
 
             <h2 className="m-0 font-serif text-4xl font-medium text-[#f4f1e9] md:text-5xl">
               Case images
             </h2>
 
             <p className="mt-4 max-w-2xl leading-7 text-[#a8adb5]">
-              Upload and manage photographs, documents, and other
-              case-related images. These can be published publicly or
-              reserved for members.
+              Upload and manage photographs
+              and other case-related images.
+              Images may be published publicly
+              or reserved for members.
             </p>
           </div>
 
@@ -337,7 +442,8 @@ export default async function AdminCasePage({
           </Link>
         </div>
 
-        {caseImages && caseImages.length > 0 ? (
+        {caseImages &&
+        caseImages.length > 0 ? (
           <div className="grid gap-4">
             {caseImages.map((image) => (
               <article
@@ -352,13 +458,16 @@ export default async function AdminCasePage({
                       </span>
 
                       <span className="border border-white/10 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#a8adb5]">
-                        {image.access_level === "public"
+                        {image.access_level ===
+                        "public"
                           ? "Public"
                           : "Members only"}
                       </span>
 
                       <span className="border border-white/10 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#a8adb5]">
-                        {image.is_published ? "Published" : "Draft"}
+                        {image.is_published
+                          ? "Published"
+                          : "Draft"}
                       </span>
 
                       {image.is_disturbing ? (
@@ -374,17 +483,31 @@ export default async function AdminCasePage({
 
                     <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm text-[#a8adb5]">
                       {image.original_filename ? (
-                        <span>{image.original_filename}</span>
+                        <span>
+                          {
+                            image.original_filename
+                          }
+                        </span>
                       ) : null}
 
-                      {formatFileSize(image.file_size_bytes) ? (
-                        <span>{formatFileSize(image.file_size_bytes)}</span>
+                      {formatFileSize(
+                        image.file_size_bytes,
+                      ) ? (
+                        <span>
+                          {formatFileSize(
+                            image.file_size_bytes,
+                          )}
+                        </span>
                       ) : null}
 
-                      <span>Order {image.sort_order}</span>
+                      <span>
+                        Order {image.sort_order}
+                      </span>
 
                       {image.image_date ? (
-                        <span>{image.image_date}</span>
+                        <span>
+                          {image.image_date}
+                        </span>
                       ) : null}
                     </div>
 
@@ -394,7 +517,8 @@ export default async function AdminCasePage({
                       </p>
                     ) : null}
 
-                    {(image.source_name || image.source_reference) ? (
+                    {(image.source_name ||
+                      image.source_reference) ? (
                       <div className="mt-4 text-sm leading-6 text-[#a8adb5]">
                         {image.source_name ? (
                           <p>
@@ -410,7 +534,9 @@ export default async function AdminCasePage({
                             <strong className="text-[#d8d9dc]">
                               Reference:
                             </strong>{" "}
-                            {image.source_reference}
+                            {
+                              image.source_reference
+                            }
                           </p>
                         ) : null}
                       </div>
@@ -430,30 +556,201 @@ export default async function AdminCasePage({
         ) : (
           <div className="border border-white/10 bg-[#10151b] p-7">
             <p className="m-0 text-[#a8adb5]">
-              No case images have been added yet.
+              No case images have been added
+              yet.
+            </p>
+          </div>
+        )}
+      </section>
+
+      {/* CASE DOCUMENTS */}
+
+      <section className="mt-9">
+        <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+          <div>
+            <p className="admin-eyebrow">
+              Case records
+            </p>
+
+            <h2 className="m-0 font-serif text-4xl font-medium text-[#f4f1e9] md:text-5xl">
+              Case documents
+            </h2>
+
+            <p className="mt-4 max-w-2xl leading-7 text-[#a8adb5]">
+              Upload and manage PDF reports,
+              presentations, exhibits, and other
+              documentary records. Documents
+              may be public or restricted to
+              signed-in members.
+            </p>
+          </div>
+
+          <Link
+            href={`/admin/cases/${caseItem.id}/documents/new`}
+            className="admin-primary-link"
+          >
+            Add documents
+          </Link>
+        </div>
+
+        {caseDocuments &&
+        caseDocuments.length > 0 ? (
+          <div className="grid gap-4">
+            {caseDocuments.map(
+              (document) => (
+                <article
+                  key={document.id}
+                  className="border border-white/10 bg-[#10151b] p-6 md:p-8"
+                >
+                  <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+                    <div className="min-w-0">
+                      <div className="mb-3 flex flex-wrap gap-2">
+                        <span className="border border-[#c8a66a]/40 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#e1c58f]">
+                          PDF document
+                        </span>
+
+                        <span className="border border-white/10 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#a8adb5]">
+                          {document.access_level ===
+                          "public"
+                            ? "Public"
+                            : "Members only"}
+                        </span>
+
+                        <span className="border border-white/10 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#a8adb5]">
+                          {document.is_published
+                            ? "Published"
+                            : "Draft"}
+                        </span>
+
+                        {document.is_sensitive ? (
+                          <span className="border border-red-400/30 bg-red-400/10 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.12em] text-red-200">
+                            Sensitive
+                          </span>
+                        ) : null}
+                      </div>
+
+                      <h3 className="m-0 font-serif text-3xl font-medium text-[#f4f1e9]">
+                        {document.title}
+                      </h3>
+
+                      <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm text-[#a8adb5]">
+                        {document.original_filename ? (
+                          <span>
+                            {
+                              document.original_filename
+                            }
+                          </span>
+                        ) : null}
+
+                        {formatFileSize(
+                          document.file_size_bytes,
+                        ) ? (
+                          <span>
+                            {formatFileSize(
+                              document.file_size_bytes,
+                            )}
+                          </span>
+                        ) : null}
+
+                        <span>
+                          Order{" "}
+                          {document.sort_order}
+                        </span>
+
+                        {document.document_date ? (
+                          <span>
+                            {
+                              document.document_date
+                            }
+                          </span>
+                        ) : null}
+                      </div>
+
+                      {document.description ? (
+                        <p className="mt-4 max-w-3xl leading-7 text-[#c8cbd0]">
+                          {
+                            document.description
+                          }
+                        </p>
+                      ) : null}
+
+                      {(document.source_name ||
+                        document.source_reference) ? (
+                        <div className="mt-4 text-sm leading-6 text-[#a8adb5]">
+                          {document.source_name ? (
+                            <p>
+                              <strong className="text-[#d8d9dc]">
+                                Source:
+                              </strong>{" "}
+                              {
+                                document.source_name
+                              }
+                            </p>
+                          ) : null}
+
+                          {document.source_reference ? (
+                            <p>
+                              <strong className="text-[#d8d9dc]">
+                                Reference:
+                              </strong>{" "}
+                              {
+                                document.source_reference
+                              }
+                            </p>
+                          ) : null}
+                        </div>
+                      ) : null}
+                    </div>
+
+                    <div className="flex shrink-0 flex-col gap-3">
+                      <Link
+                        href={`/admin/cases/${caseItem.id}/documents/${document.id}/edit`}
+                        className="admin-primary-link"
+                      >
+                        Edit document
+                      </Link>
+                    </div>
+                  </div>
+                </article>
+              ),
+            )}
+          </div>
+        ) : (
+          <div className="border border-white/10 bg-[#10151b] p-7">
+            <p className="m-0 text-[#a8adb5]">
+              No case documents have been
+              added yet.
             </p>
           </div>
         )}
       </section>
 
       <div className="admin-coming-next">
-        <p className="admin-eyebrow">Next stage</p>
+        <p className="admin-eyebrow">
+          Next stage
+        </p>
 
         <h2>Build out the case archive</h2>
 
         <p>
-          This case now supports secure audio and video uploads,
-          case-image uploads, private administrative management,
-          publishing controls, sorting, and deletion. Future tools
-          can add image editing, warning-gated member galleries,
-          transcripts, chapter markers, and source-agency linking.
+          This case supports secure audio and
+          video uploads, case-image uploads,
+          PDF document uploads, private
+          administrative management,
+          publishing controls, sorting, and
+          deletion. Future tools can add image
+          editing, warning-gated member
+          galleries, transcripts, chapter
+          markers, and source-agency linking.
         </p>
       </div>
 
       <CaseDangerActions
         caseId={caseItem.id}
         caseTitle={caseItem.title}
-        caseStatus={caseItem.case_status}
+        caseStatus={
+          caseItem.case_status
+        }
       />
     </section>
   );
