@@ -147,7 +147,6 @@ async function getPublishedCase(slug: string) {
         access_level,
         is_sensitive,
         sort_order,
-        object_key,
         created_at
       `,
     )
@@ -167,52 +166,10 @@ async function getPublishedCase(slug: string) {
     );
   }
 
-  const documentsWithUrls = await Promise.all(
-    (documents ?? []).map(async (document) => {
-      try {
-        const safeFilename =
-          document.original_filename
-            ?.replace(/["\r\n]/g, "")
-            .trim() || "case-document.pdf";
-
-        const command = new GetObjectCommand({
-          Bucket: r2BucketName,
-          Key: document.object_key,
-          ResponseContentType: "application/pdf",
-          ResponseContentDisposition:
-            `inline; filename="${safeFilename}"`,
-        });
-
-        const documentUrl = await getSignedUrl(
-          r2Client,
-          command,
-          {
-            expiresIn: 60 * 60,
-          },
-        );
-
-        return {
-          ...document,
-          document_url: documentUrl,
-        };
-      } catch (documentError) {
-        console.error(
-          `Unable to prepare document ${document.id}:`,
-          documentError,
-        );
-
-        return {
-          ...document,
-          document_url: null,
-        };
-      }
-    }),
-  );
-
   return {
     caseItem,
     recordings: recordingsWithThumbnails,
-    documents: documentsWithUrls,
+    documents: documents ?? [],
   };
 }
 
@@ -409,14 +366,12 @@ export default async function PublicCasePage({
                 : "recordings"}
             </span>
 
-            {documents.length > 0 ? (
-              <span>
-                {documents.length} published{" "}
-                {documents.length === 1
-                  ? "document"
-                  : "documents"}
-              </span>
-            ) : null}
+            <span>
+              {documents.length} published{" "}
+              {documents.length === 1
+                ? "document"
+                : "documents"}
+            </span>
           </div>
         </div>
       </section>
@@ -574,23 +529,23 @@ export default async function PublicCasePage({
 
       <CaseImageGallery caseId={caseItem.id} />
 
-      {documents.length > 0 ? (
-        <section className="border-t border-white/10 bg-[#0b0f14] px-5 py-12 md:px-10 lg:px-16 lg:py-16">
-          <div className="mx-auto max-w-[1500px]">
-            <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-[#e1c58f]">
-              Case documents
-            </p>
+      <section className="border-t border-white/10 bg-[#0b0f14] px-5 py-12 md:px-10 lg:px-16 lg:py-16">
+        <div className="mx-auto max-w-[1500px]">
+          <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-[#e1c58f]">
+            Case documents
+          </p>
 
-            <h2 className="mt-3 font-serif text-4xl font-medium md:text-5xl">
-              Reports and exhibits
-            </h2>
+          <h2 className="mt-3 font-serif text-4xl font-medium md:text-5xl">
+            Reports and exhibits
+          </h2>
 
-            <p className="mt-4 max-w-3xl leading-7 text-[#a8adb5]">
-              Public-record reports, presentations,
-              exhibits, and other documentary materials
-              associated with this case.
-            </p>
+          <p className="mt-4 max-w-3xl leading-7 text-[#a8adb5]">
+            Public-record reports, presentations, exhibits,
+            and other documentary materials associated with
+            this case.
+          </p>
 
+          {documents.length > 0 ? (
             <div className="mt-9 grid gap-6">
               {documents.map(
                 (document, index) => {
@@ -605,9 +560,10 @@ export default async function PublicCasePage({
                       className="grid gap-5 border-t border-white/10 pt-6 md:grid-cols-[70px_minmax(0,1fr)_auto] md:items-start"
                     >
                       <div className="font-serif text-3xl text-[#c8a66a]">
-                        {String(
-                          index + 1,
-                        ).padStart(2, "0")}
+                        {String(index + 1).padStart(
+                          2,
+                          "0",
+                        )}
                       </div>
 
                       <div className="min-w-0">
@@ -682,31 +638,30 @@ export default async function PublicCasePage({
                       </div>
 
                       <div className="md:pt-1">
-                        {document.document_url ? (
-                          <a
-                            href={
-                              document.document_url
-                            }
-                            target="_blank"
-                            rel="noreferrer"
-                            className="inline-flex min-h-12 w-full items-center justify-center border border-[#c8a66a] px-5 text-xs font-extrabold uppercase tracking-[0.1em] text-[#e1c58f] transition hover:bg-[#c8a66a] hover:text-[#111318] md:w-auto"
-                          >
-                            View PDF
-                          </a>
-                        ) : (
-                          <span className="text-sm text-[#747b84]">
-                            Document unavailable
-                          </span>
-                        )}
+                        <a
+                          href={`/api/public/case-documents/${document.id}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex min-h-12 w-full items-center justify-center border border-[#c8a66a] px-5 text-xs font-extrabold uppercase tracking-[0.1em] text-[#e1c58f] transition hover:bg-[#c8a66a] hover:text-[#111318] md:w-auto"
+                        >
+                          View PDF
+                        </a>
                       </div>
                     </article>
                   );
                 },
               )}
             </div>
-          </div>
-        </section>
-      ) : null}
+          ) : (
+            <div className="mt-9 border border-white/10 bg-[#10151b] p-7">
+              <p className="m-0 text-[#a8adb5]">
+                No public documents have been published for
+                this case yet.
+              </p>
+            </div>
+          )}
+        </div>
+      </section>
 
       <section
         id="case-overview"
