@@ -131,6 +131,7 @@ export default async function CasesArchivePage({
   const caseIds = filteredCases.map((caseItem) => caseItem.id);
 
   let recordingCounts = new Map<string, number>();
+  let documentCounts = new Map<string, number>();
   const featuredVideoCases = new Set<string>();
 
   if (caseIds.length > 0) {
@@ -170,6 +171,33 @@ export default async function CasesArchivePage({
       ) {
         featuredVideoCases.add(recording.case_id);
       }
+    }
+
+    const {
+      data: documents,
+      error: documentsError,
+    } = await supabase
+      .from("case_documents")
+      .select("case_id")
+      .in("case_id", caseIds)
+      .eq("is_published", true);
+
+    if (documentsError) {
+      throw new Error(
+        `Unable to load document totals: ${documentsError.message}`,
+      );
+    }
+
+    documentCounts = new Map<string, number>();
+
+    for (const document of documents ?? []) {
+      const currentCount =
+        documentCounts.get(document.case_id) ?? 0;
+
+      documentCounts.set(
+        document.case_id,
+        currentCount + 1,
+      );
     }
   }
 
@@ -329,6 +357,12 @@ export default async function CasesArchivePage({
                   const recordingCount =
                     recordingCounts.get(caseItem.id) ?? 0;
 
+                  const documentCount =
+                    documentCounts.get(caseItem.id) ?? 0;
+
+                  const archiveFileCount =
+                    recordingCount + documentCount;
+
                   const hasFeaturedVideo =
                     featuredVideoCases.has(caseItem.id);
 
@@ -403,8 +437,8 @@ export default async function CasesArchivePage({
                           </span>
 
                           <span className="inline-flex items-center border border-white/10 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.1em] text-[#a8adb5]">
-                            {recordingCount}{" "}
-                            {recordingCount === 1
+                            {archiveFileCount}{" "}
+                            {archiveFileCount === 1
                               ? "file"
                               : "files"}
                           </span>
