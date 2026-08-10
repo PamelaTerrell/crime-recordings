@@ -131,10 +131,16 @@ export default async function CasesArchivePage({
   const caseIds = filteredCases.map((caseItem) => caseItem.id);
 
   let recordingCounts = new Map<string, number>();
+  let imageCounts = new Map<string, number>();
   let documentCounts = new Map<string, number>();
+
   const featuredVideoCases = new Set<string>();
 
   if (caseIds.length > 0) {
+    /*
+     * RECORDINGS
+     * Includes audio and video records.
+     */
     const { data: recordings, error: recordingsError } =
       await supabase
         .from("recordings")
@@ -173,6 +179,35 @@ export default async function CasesArchivePage({
       }
     }
 
+    /*
+     * CASE IMAGES
+     * Includes published crime-scene photos,
+     * evidence images, screenshots, etc.
+     */
+  const { data: imageTotals, error: imagesError } =
+  await supabase.rpc("get_case_image_counts");
+
+if (imagesError) {
+  throw new Error(
+    `Unable to load image totals: ${imagesError.message}`,
+  );
+}
+
+imageCounts = new Map<string, number>();
+
+for (const imageTotal of imageTotals ?? []) {
+  imageCounts.set(
+    imageTotal.case_id,
+    Number(imageTotal.image_count),
+  );
+}
+     
+
+    /*
+     * DOCUMENTS
+     * Includes PDFs, PowerPoints, reports,
+     * and other published case documents.
+     */
     const {
       data: documents,
       error: documentsError,
@@ -203,6 +238,7 @@ export default async function CasesArchivePage({
 
   return (
     <main className="min-h-screen bg-[#080b0f] text-[#f4f1e9]">
+      {/* HEADER */}
       <header className="flex min-h-20 items-center justify-between gap-6 border-b border-white/10 px-5 py-4 md:px-10 lg:px-16">
         <Link
           href="/"
@@ -228,6 +264,7 @@ export default async function CasesArchivePage({
         </nav>
       </header>
 
+      {/* ARCHIVE HERO */}
       <section className="border-b border-white/10 px-5 py-12 md:px-10 md:py-14 lg:px-16 lg:py-16">
         <div className="mx-auto max-w-[1500px]">
           <p className="mb-4 text-xs font-extrabold uppercase tracking-[0.24em] text-[#e1c58f]">
@@ -242,8 +279,8 @@ export default async function CasesArchivePage({
             <p className="m-0 max-w-4xl text-base leading-8 text-[#b8bcc2] md:text-lg">
               Explore documented criminal cases through original
               interviews, interrogations, dispatch calls, body-camera
-              footage, courtroom recordings, and other public-record
-              media.
+              footage, courtroom recordings, crime-scene images,
+              investigative documents, and other public-record media.
             </p>
 
             <div className="border-l border-[#c8a66a]/40 pl-6">
@@ -275,6 +312,7 @@ export default async function CasesArchivePage({
         </div>
       </section>
 
+      {/* SEARCH */}
       <section className="border-b border-white/10 bg-[#0b0f14] px-5 py-5 md:px-10 md:py-6 lg:px-16">
         <div className="mx-auto max-w-[1500px]">
           <form
@@ -333,10 +371,12 @@ export default async function CasesArchivePage({
         </div>
       </section>
 
+      {/* CASE LIST */}
       <section className="px-5 py-6 md:px-10 md:py-8 lg:px-16 lg:py-8">
         <div className="mx-auto max-w-[1500px]">
           {filteredCases.length > 0 ? (
             <div className="overflow-hidden border border-white/10">
+              {/* DESKTOP COLUMN LABELS */}
               <div className="hidden grid-cols-[56px_minmax(260px,1.5fr)_minmax(170px,0.7fr)_minmax(150px,0.65fr)_120px_42px] items-center gap-5 border-b border-white/10 bg-[#0a0e13] px-5 py-3 text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#747b84] lg:grid">
                 <span>No.</span>
                 <span>Case</span>
@@ -357,11 +397,23 @@ export default async function CasesArchivePage({
                   const recordingCount =
                     recordingCounts.get(caseItem.id) ?? 0;
 
+                  const imageCount =
+                    imageCounts.get(caseItem.id) ?? 0;
+
                   const documentCount =
                     documentCounts.get(caseItem.id) ?? 0;
 
+                  /*
+                   * TOTAL ARCHIVE FILES
+                   *
+                   * recordings = audio + video
+                   * images = case photographs/images
+                   * documents = reports/PDFs/etc.
+                   */
                   const archiveFileCount =
-                    recordingCount + documentCount;
+                    recordingCount +
+                    imageCount +
+                    documentCount;
 
                   const hasFeaturedVideo =
                     featuredVideoCases.has(caseItem.id);
@@ -374,10 +426,12 @@ export default async function CasesArchivePage({
                       aria-label={`Open ${caseItem.title}`}
                     >
                       <article className="grid gap-4 lg:grid-cols-[56px_minmax(260px,1.5fr)_minmax(170px,0.7fr)_minmax(150px,0.65fr)_120px_42px] lg:items-center lg:gap-5">
+                        {/* CASE NUMBER */}
                         <div className="hidden font-serif text-lg text-[#8d744b] lg:block">
                           {String(index + 1).padStart(2, "0")}
                         </div>
 
+                        {/* CASE TITLE */}
                         <div className="min-w-0">
                           <div className="mb-2 flex flex-wrap items-center gap-2">
                             <span className="font-serif text-sm text-[#8d744b] lg:hidden">
@@ -415,6 +469,7 @@ export default async function CasesArchivePage({
                           ) : null}
                         </div>
 
+                        {/* LOCATION */}
                         <div className="text-sm leading-6 text-[#c8cbd0]">
                           <span className="mb-1 block text-[9px] font-extrabold uppercase tracking-[0.12em] text-[#666d76] lg:hidden">
                             Location
@@ -423,6 +478,7 @@ export default async function CasesArchivePage({
                           {location}
                         </div>
 
+                        {/* INCIDENT DATE */}
                         <div className="text-sm leading-6 text-[#c8cbd0]">
                           <span className="mb-1 block text-[9px] font-extrabold uppercase tracking-[0.12em] text-[#666d76] lg:hidden">
                             Incident date
@@ -431,6 +487,7 @@ export default async function CasesArchivePage({
                           {formatDate(caseItem.incident_date)}
                         </div>
 
+                        {/* FILE COUNT */}
                         <div>
                           <span className="mb-1 block text-[9px] font-extrabold uppercase tracking-[0.12em] text-[#666d76] lg:hidden">
                             Archive files
@@ -444,6 +501,7 @@ export default async function CasesArchivePage({
                           </span>
                         </div>
 
+                        {/* ARROW */}
                         <div className="hidden justify-end text-xl text-[#c8a66a] transition-transform group-hover:translate-x-1 lg:flex">
                           <span aria-hidden="true">→</span>
                         </div>
@@ -454,6 +512,7 @@ export default async function CasesArchivePage({
               </div>
             </div>
           ) : searchQuery ? (
+            /* NO SEARCH RESULTS */
             <div className="grid min-h-[40vh] place-items-center border border-white/10 bg-[#10151b] px-6 py-16 text-center">
               <div className="max-w-2xl">
                 <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-[#e1c58f]">
@@ -479,6 +538,7 @@ export default async function CasesArchivePage({
               </div>
             </div>
           ) : (
+            /* NO PUBLISHED CASES */
             <div className="grid min-h-[40vh] place-items-center border border-white/10 bg-[#10151b] px-6 py-16 text-center">
               <div className="max-w-2xl">
                 <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-[#e1c58f]">
@@ -499,6 +559,7 @@ export default async function CasesArchivePage({
         </div>
       </section>
 
+      {/* ARCHIVE ACCESS */}
       <section className="border-t border-white/10 bg-[#0b0f14] px-5 py-16 md:px-10 lg:px-16">
         <div className="mx-auto grid max-w-[1500px] gap-8 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
           <div>
@@ -525,6 +586,7 @@ export default async function CasesArchivePage({
         </div>
       </section>
 
+      {/* FOOTER */}
       <footer className="flex flex-col justify-between gap-5 border-t border-white/10 px-5 py-10 text-sm text-[#747b84] md:flex-row md:px-10 lg:px-16">
         <p className="m-0">
           Crime Recordings · Public-record documentary archive
