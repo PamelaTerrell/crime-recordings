@@ -17,36 +17,56 @@ export default async function AdminPage() {
         published_at
       `,
     )
-    .order("updated_at", { ascending: false });
+    .order("updated_at", {
+      ascending: false,
+    });
 
   return (
     <section>
       <div className="admin-page-heading">
         <div>
-          <p className="admin-eyebrow">Editorial dashboard</p>
+          <p className="admin-eyebrow">
+            Editorial dashboard
+          </p>
 
           <h1>Case archive</h1>
 
           <p>
-            Create, organize, review, and eventually publish the cases in the
-            Crime Recordings archive.
+            Create, organize, review, and eventually
+            publish the cases in the Crime Recordings
+            archive.
           </p>
         </div>
 
-        <Link href="/admin/cases/new" className="admin-primary-link">
+        <Link
+          href="/admin/cases/new"
+          className="admin-primary-link"
+        >
           Create a new case
           <span aria-hidden="true">→</span>
         </Link>
       </div>
 
       {error ? (
-        <div className="admin-alert admin-alert-error" role="alert">
-          The case list could not be loaded: {error.message}
+        <div
+          className="admin-alert admin-alert-error"
+          role="alert"
+          style={{
+            fontSize: "1rem",
+            lineHeight: "1.7",
+            fontWeight: 600,
+          }}
+        >
+          The case list could not be loaded:{" "}
+          {error.message}
         </div>
       ) : cases && cases.length > 0 ? (
         <div className="admin-case-list">
           {cases.map((caseItem) => (
-            <article className="admin-case-row" key={caseItem.id}>
+            <article
+              className="admin-case-row"
+              key={caseItem.id}
+            >
               <div>
                 <span className="admin-status">
                   {caseItem.case_status}
@@ -58,23 +78,40 @@ export default async function AdminPage() {
               </div>
 
               <div className="admin-case-meta">
-                {caseItem.is_featured && <span>Featured</span>}
+                {caseItem.is_featured ? (
+                  <span>Featured</span>
+                ) : null}
 
-                <time dateTime={caseItem.updated_at}>
+                <time
+                  dateTime={
+                    caseItem.updated_at
+                  }
+                >
                   Updated{" "}
-                  {new Intl.DateTimeFormat("en-US", {
-                    month: "short",
-                    day: "numeric",
-                    year: "numeric",
-                  }).format(new Date(caseItem.updated_at))}
+                  {new Intl.DateTimeFormat(
+                    "en-US",
+                    {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                    },
+                  ).format(
+                    new Date(
+                      caseItem.updated_at,
+                    ),
+                  )}
                 </time>
 
                 <div className="admin-case-row-actions">
-                  <Link href={`/admin/cases/${caseItem.id}`}>
+                  <Link
+                    href={`/admin/cases/${caseItem.id}`}
+                  >
                     Open case →
                   </Link>
 
-                  <Link href={`/admin/cases/${caseItem.id}/edit`}>
+                  <Link
+                    href={`/admin/cases/${caseItem.id}/edit`}
+                  >
                     Edit case →
                   </Link>
                 </div>
@@ -84,16 +121,25 @@ export default async function AdminPage() {
         </div>
       ) : (
         <div className="admin-empty-state">
-          <p className="admin-eyebrow">No cases yet</p>
+          <p className="admin-eyebrow">
+            No cases yet
+          </p>
 
-          <h2>Create the first Crime Recordings case.</h2>
+          <h2>
+            Create the first Crime Recordings
+            case.
+          </h2>
 
           <p>
-            It will be saved privately as a draft and will not appear on the
+            It will be saved privately as a
+            draft and will not appear on the
             public website.
           </p>
 
-          <Link href="/admin/cases/new" className="admin-primary-link">
+          <Link
+            href="/admin/cases/new"
+            className="admin-primary-link"
+          >
             Create the first case
           </Link>
         </div>
