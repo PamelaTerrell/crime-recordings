@@ -817,10 +817,11 @@ background 180ms ease,
 
 .admin-eyebrow {
   margin: 0 0 10px;
-  color: var(--admin-red-bright);
-  font-size: 0.67rem;
+  color: #ff5a61;
+  font-size: 0.8rem;
   font-weight: 850;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.16em;
+  line-height: 1.5;
   text-transform: uppercase;
 }
 
@@ -1156,9 +1157,10 @@ background 180ms ease,
 }
 
 .admin-form-section-heading > span {
-  color: var(--admin-red-bright);
+  color: #ff5a61;
   font-family: var(--font-display), Georgia, serif;
-  font-size: 0.8rem;
+  font-size: 0.95rem;
+  font-weight: 700;
 }
 
 .admin-form-section-heading h2 {
@@ -1341,10 +1343,11 @@ background 180ms ease,
 
 .admin-reading-panel h2 {
   margin: 0 0 12px;
-  color: var(--admin-red-bright);
-  font-size: 0.64rem;
+  color: #ff5a61;
+  font-size: 0.82rem;
   font-weight: 800;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.12em;
+  line-height: 1.5;
   text-transform: uppercase;
 }
 

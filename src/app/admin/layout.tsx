@@ -92,7 +92,7 @@ export default async function AdminLayout({
 
         <nav className="admin-nav" aria-label="Administration">
           <Link href="/admin">Dashboard</Link>
-          <Link href="/admin/cases">Case Archive</Link>
+          
           <Link href="/admin/cases/new" className="admin-nav-primary">
             + Create Case
           </Link>
