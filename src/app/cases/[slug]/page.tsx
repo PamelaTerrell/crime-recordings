@@ -177,31 +177,54 @@ export async function generateMetadata({
   params,
 }: PublicCasePageProps): Promise<Metadata> {
   const { slug } = await params;
-  const result = await getPublishedCase(slug);
 
-  if (!result) {
+  const supabase = await createClient();
+
+  const { data: caseItem, error } = await supabase
+    .from("cases")
+    .select(
+      `
+        title,
+        slug,
+        summary
+      `,
+    )
+    .eq("slug", slug)
+    .eq("case_status", "published")
+    .maybeSingle();
+
+  if (error) {
+    console.error(
+      "Unable to load case metadata:",
+      error,
+    );
+  }
+
+  if (!caseItem) {
     return {
       title: "Case Not Found | Crime Recordings",
     };
   }
 
   const description =
-    result.caseItem.summary ??
-    `Review the public-record media archive for ${result.caseItem.title}.`;
+    caseItem.summary ??
+    `Review the public-record media archive for ${caseItem.title}.`;
 
   return {
-    title: `${result.caseItem.title} | Crime Recordings`,
+    title: `${caseItem.title} | Crime Recordings`,
     description,
     alternates: {
-      canonical: `/cases/${result.caseItem.slug}`,
+      canonical: `/cases/${caseItem.slug}`,
     },
     openGraph: {
-      title: result.caseItem.title,
+      title: caseItem.title,
       description,
       type: "article",
     },
   };
 }
+
+
 
 function formatDate(value: string | null) {
   if (!value) {
