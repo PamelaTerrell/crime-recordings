@@ -1,36 +1,77 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import HomepageFeaturedVideo from "./homepage-featured-video";
 
+const siteUrl = "https://www.crimerecordings.com";
+
+export const metadata: Metadata = {
+  title: "Crime Recordings | True Crime Public Records Archive",
+
+  description:
+    "Crime Recordings is a public-record true-crime archive featuring police interviews, interrogations, 911 calls, dispatch audio, body-camera footage, video evidence, crime-scene photographs, graphic visual evidence, and case documents.",
+
+  alternates: {
+    canonical: "/",
+  },
+
+  openGraph: {
+    type: "website",
+    url: siteUrl,
+    siteName: "Crime Recordings",
+    title: "Crime Recordings | True Crime Public Records Archive",
+    description:
+      "Explore real criminal cases through police interviews, interrogations, dispatch audio, 911 calls, body-camera footage, crime-scene photographs, video evidence, and public-record case documents.",
+    images: [
+      {
+        url: "/crime-recordings-logo.png",
+        width: 1200,
+        height: 1200,
+        alt: "Crime Recordings true crime public records archive",
+      },
+    ],
+  },
+
+  twitter: {
+    card: "summary_large_image",
+    title: "Crime Recordings | True Crime Public Records Archive",
+    description:
+      "Original police recordings, public records, crime-scene photographs, case documents, interviews, interrogations, dispatch audio, and video evidence.",
+    images: ["/crime-recordings-logo.png"],
+  },
+};
+
 const RECORDING_TYPES = [
-  "Interviews",
+  "Police Interviews",
   "Interrogations",
-  "Emergency Calls",
+  "911 & Emergency Calls",
   "Dispatch Audio",
   "Body-Camera Video",
   "Courtroom Recordings",
   "Official Statements",
+  "Crime-Scene Photographs",
+  "Case Documents",
 ];
 
 const PLATFORM_FEATURES = [
   {
     number: "01",
-    title: "Original recordings",
+    title: "Original public-record media",
     description:
-      "Watch and listen to recordings obtained from official agencies and public-records sources.",
+      "Watch, listen to, and examine recordings, photographs, and documents obtained from official agencies and public-record sources.",
   },
   {
     number: "02",
-    title: "Case context",
+    title: "Documented case context",
     description:
-      "Understand when the recording occurred, who is speaking, and how it relates to the case.",
+      "Understand when evidence was created, who is speaking, what investigators documented, and how each item relates to the broader case.",
   },
   {
     number: "03",
-    title: "Complete access",
+    title: "Growing case archives",
     description:
-      "Watch selected recordings publicly and explore extended case media through the full archive.",
+      "Explore selected material publicly and access extended recordings, photographs, documents, and other case media through the complete archive.",
   },
 ];
 
@@ -132,71 +173,75 @@ export default async function Home() {
   return (
     <main>
       <header className="site-header">
-  <Link
-  href="/"
-  className="font-serif text-4xl font-medium tracking-[-0.03em] text-[#f4f1e9]"
->
-  Crime Recordings
-</Link>
+        <Link
+          href="/"
+          className="font-serif text-4xl font-medium tracking-[-0.03em] text-[#f4f1e9]"
+          aria-label="Crime Recordings home"
+        >
+          Crime Recordings
+        </Link>
 
-  <nav
-    className="site-nav"
-    aria-label="Primary navigation"
-  >
-   
+        <nav
+          className="site-nav"
+          aria-label="Primary navigation"
+        >
+          <Link href="/cases">
+            The Archive
+          </Link>
 
-    <Link href="/cases">
-      The Archive
-    </Link>
+          <a href="#updates">
+            Updates
+          </a>
 
-    <a href="#updates">
-      Updates
-    </a>
+          <Link href="/membership">
+            Join for $2.99
+          </Link>
 
-    <Link href="/membership">
-      Join for $2.99
-    </Link>
-
-    <Link href="/account">
-      My Account
-    </Link>
-  </nav>
-</header>
- 
-  
-   
-   
-        
+          <Link href="/account">
+            My Account
+          </Link>
+        </nav>
+      </header>
 
       {featuredRecording && featuredCase ? (
         <section
           id="top"
           className="bg-[#080b0f] pb-16 pt-14 text-[#f4f1e9] md:pb-24 md:pt-20"
         >
-         
+          <HomepageFeaturedVideo
+            recordingId={featuredRecording.id}
+            title={featuredRecording.title}
+            caseHref={`/cases/${featuredCase.slug}`}
+          />
 
-            <HomepageFeaturedVideo
-  recordingId={featuredRecording.id}
-  title={featuredRecording.title}
-  caseHref={`/cases/${featuredCase.slug}`}
-/>
-
-             <div className="mx-auto max-w-[1600px]">
+          <div className="mx-auto max-w-[1600px]">
             <div className="px-5 pb-10 md:px-10 lg:px-16">
               <p className="mb-5 text-xs font-extrabold uppercase tracking-[0.24em] text-[#e1c58f]">
-                Original public-record media
+                Public-record true crime archive
               </p>
 
-              <p className="m-0 max-w-5xl font-serif text-[clamp(2.2rem,5vw,5.5rem)] font-medium leading-[1.02] tracking-[-0.04em] text-[#f4f1e9]">
-                Real cases. Real interrogations. Raw footage.
-              </p>
+              <h1 className="m-0 max-w-6xl font-serif text-[clamp(2.2rem,5vw,5.5rem)] font-medium leading-[1.02] tracking-[-0.04em] text-[#f4f1e9]">
+                Crime Recordings:
+                <span className="block">
+                  Real cases. Real recordings.
+                </span>
+              </h1>
 
               <p className="mt-7 max-w-4xl text-lg leading-8 text-[#b8bcc2] md:text-xl md:leading-9">
-                Crime Recordings presents original interviews,
-                interrogations, emergency calls, body-camera
-                footage, dispatch audio, courtroom recordings,
-                and other official media obtained from
-                public-record sources.
+                Crime Recordings is a public-record true-crime
+                archive presenting original police interviews,
+                interrogations, 911 and emergency calls,
+                body-camera footage, dispatch audio, courtroom
+                recordings, crime-scene photographs, video
+                evidence, and case documents obtained from
+                official sources.
+              </p>
+
+              <p className="mt-4 max-w-4xl text-base leading-7 text-[#8f959d]">
+                CrimeRecordings.com preserves original source
+                material so viewers can examine documented
+                criminal cases beyond headlines, summaries,
+                and commentary.
               </p>
             </div>
 
@@ -234,7 +279,6 @@ export default async function Home() {
                   className="inline-flex min-h-14 items-center justify-center border border-[#c8a66a] bg-[#c8a66a] px-7 text-xs font-extrabold uppercase tracking-[0.1em] text-[#111318] transition hover:bg-[#e1c58f]"
                 >
                   View complete case
-
                   <span
                     className="ml-4"
                     aria-hidden="true"
@@ -266,17 +310,18 @@ export default async function Home() {
             </p>
 
             <h1>
-              Real cases.
-              <span>Real recordings.</span>
+              Crime Recordings
+              <span>Real cases. Real recordings.</span>
             </h1>
 
             <p className="hero-description">
-              Real cases. Real interrogations. Raw footage.
-              Crime Recordings presents interviews,
-              interrogations, emergency calls, body-camera
-              footage, dispatch audio, courtroom recordings,
-              and other official media obtained through
-              public-record requests.
+              Crime Recordings is a public-record true-crime
+              archive featuring police interviews,
+              interrogations, 911 and emergency calls,
+              body-camera footage, dispatch audio, courtroom
+              recordings, crime-scene photographs, video
+              evidence, and case documents obtained from
+              official sources.
             </p>
 
             <div className="hero-actions">
@@ -302,7 +347,7 @@ export default async function Home() {
 
           <aside
             className="case-file"
-            aria-label="Crime Recordings introduction"
+            aria-label="Crime Recordings archive introduction"
           >
             <div className="file-top">
               <span>Crime Recordings</span>
@@ -339,8 +384,10 @@ export default async function Home() {
               </div>
 
               <div>
-                <dt>Format</dt>
-                <dd>Audio and video archive</dd>
+                <dt>Formats</dt>
+                <dd>
+                  Audio, video, images, and documents
+                </dd>
               </div>
 
               <div>
@@ -361,27 +408,35 @@ export default async function Home() {
         id="about"
       >
         <p className="section-label">
-          Why Crime Recordings
+          About Crime Recordings
         </p>
 
         <div className="statement-layout">
           <h2>
-            The source material tells a story of its own.
+            The original record tells a story of its own.
           </h2>
 
           <div className="statement-copy">
             <p>
               True-crime stories are often condensed into
-              headlines, summaries, and commentary. Crime
-              Recordings takes viewers and listeners closer
-              to the original record.
+              headlines, documentaries, summaries, and
+              commentary. Crime Recordings takes viewers and
+              listeners closer to the underlying public
+              record.
             </p>
 
             <p>
-              Our goal is to present compelling source
-              material with context, careful organization,
-              and respect for the people connected to each
-              case.
+              The archive organizes police interviews,
+              interrogations, recordings, photographs,
+              documents, and other investigative material
+              alongside factual case context.
+            </p>
+
+            <p>
+              Our goal is to preserve and present compelling
+              source material with careful organization,
+              useful context, and respect for the people
+              connected to each case.
             </p>
           </div>
         </div>
@@ -390,6 +445,7 @@ export default async function Home() {
       <section
         className="features-section"
         id="archive"
+        aria-labelledby="archive-heading"
       >
         <div className="section-heading">
           <div>
@@ -397,14 +453,16 @@ export default async function Home() {
               Inside the archive
             </p>
 
-            <h2>
-              Real cases. Original recordings.
+            <h2 id="archive-heading">
+              True-crime recordings, photographs, and
+              public records.
             </h2>
           </div>
 
           <p>
-            Built as a growing documentary archive rather
-            than a collection of disconnected clips.
+            Crime Recordings is built as a growing
+            documentary archive rather than a collection of
+            disconnected clips.
           </p>
         </div>
 
@@ -423,7 +481,10 @@ export default async function Home() {
           ))}
         </div>
 
-        <div className="recording-types">
+        <div
+          className="recording-types"
+          aria-label="Types of material in the Crime Recordings archive"
+        >
           {RECORDING_TYPES.map((type) => (
             <span key={type}>{type}</span>
           ))}
@@ -434,7 +495,7 @@ export default async function Home() {
             className="primary-button"
             href="/cases"
           >
-            Browse published cases
+            Browse published true-crime cases
 
             <span aria-hidden="true">
               →
@@ -444,34 +505,66 @@ export default async function Home() {
       </section>
 
       <section
+        className="border-t border-white/10 bg-[#0b0e12] px-5 py-16 text-[#f4f1e9] md:px-10 lg:px-16"
+        aria-labelledby="content-advisory-heading"
+      >
+        <div className="mx-auto max-w-[1400px]">
+          <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-[#e1c58f]">
+            Content advisory
+          </p>
+
+          <h2
+            id="content-advisory-heading"
+            className="mt-4 max-w-4xl font-serif text-3xl font-medium md:text-4xl"
+          >
+            Some case materials contain graphic or
+            disturbing evidence.
+          </h2>
+
+          <p className="mt-5 max-w-4xl text-base leading-8 text-[#a8adb5] md:text-lg">
+            Certain archives may include crime-scene
+            photographs, blood, injuries, deceased victims,
+            disturbing audio or video, and other sensitive
+            investigative material. Graphic content is
+            identified where appropriate so viewers can make
+            an informed choice before viewing it.
+          </p>
+        </div>
+      </section>
+
+      <section
         className="coming-soon-section"
         id="updates"
+        aria-labelledby="updates-heading"
       >
         <div>
           <p className="section-label">
             The archive is open
           </p>
 
-          <h2>
+          <h2 id="updates-heading">
             Crime Recordings is actively growing.
           </h2>
         </div>
 
         <div className="coming-soon-copy">
           <p>
-            We are organizing additional official
-            recordings, supporting timelines, source
-            details, and factual case background.
+            Additional police recordings, public records,
+            crime-scene photographs, case documents,
+            timelines, source details, and factual case
+            background are continually being organized and
+            prepared for the archive.
           </p>
 
           <p>
-            New public videos and complete case archives
-            will be added as the material is reviewed and
-            prepared.
+            New public recordings and expanded case archives
+            will be added as material is reviewed, organized,
+            and prepared for publication.
           </p>
 
           <p className="launch-note">
-            CrimeRecordings.com · Established 2026
+            CrimeRecordings.com · Public-record true-crime
+            archive · Established 2026
           </p>
         </div>
       </section>
@@ -484,14 +577,15 @@ export default async function Home() {
             </p>
 
             <h2 className="mt-5 max-w-4xl font-serif text-4xl font-medium leading-tight md:text-6xl">
-              Unlock the complete recordings behind the
-              cases.
+              Explore the complete recordings and case
+              materials behind the archive.
             </h2>
 
             <p className="mt-6 max-w-3xl text-lg leading-8 text-[#a8adb5]">
               Join for $2.99 per month to access
-              members-only interviews, interrogations,
-              emergency calls, audio, video, and extended
+              members-only police interviews,
+              interrogations, emergency calls, audio,
+              video, photographs, documents, and extended
               case media.
             </p>
           </div>
@@ -518,14 +612,15 @@ export default async function Home() {
         <div className="footer-brand">
           <Image
             src="/crime-recordings-logo.png"
-            alt="Crime Recordings"
+            alt="Crime Recordings public-record true-crime archive"
             width={240}
             height={160}
             className="footer-logo"
           />
 
           <p>
-            Real cases. Original recordings.
+            Crime Recordings · Real cases. Original
+            recordings.
           </p>
         </div>
 
@@ -534,8 +629,12 @@ export default async function Home() {
             className="flex flex-wrap gap-x-6 gap-y-3"
             aria-label="Footer navigation"
           >
+            <Link href="/">
+              Crime Recordings
+            </Link>
+
             <Link href="/cases">
-              Cases
+              Case Archive
             </Link>
 
             <Link href="/membership">
@@ -559,6 +658,11 @@ export default async function Home() {
             <p>
               © {new Date().getFullYear()} Crime Recordings
               {" "}— A Stabile USA Project
+            </p>
+
+            <p>
+              CrimeRecordings.com documents original
+              public-record material from criminal cases.
             </p>
           </div>
         </div>
