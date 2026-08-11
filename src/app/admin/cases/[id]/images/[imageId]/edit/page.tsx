@@ -57,6 +57,8 @@ export default async function EditCaseImagePage({
     notFound();
   }
 
+  const caseSlug = caseItem.slug;
+
   const { data: image, error: imageError } =
     await supabase
       .from("case_images")
@@ -241,7 +243,7 @@ export default async function EditCaseImagePage({
     );
 
     revalidatePath(
-      `/cases/${caseItem.slug}`,
+      `/cases/${caseSlug}`,
     );
 
     revalidatePath("/cases");
