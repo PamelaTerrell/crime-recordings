@@ -543,12 +543,19 @@ export default async function AdminCasePage({
                     ) : null}
                   </div>
 
-                  <div className="shrink-0">
-                    <CaseImageDeleteButton
-                      imageId={image.id}
-                      imageTitle={image.title}
-                    />
-                  </div>
+                  <div className="flex shrink-0 flex-col gap-3">
+  <Link
+    href={`/admin/cases/${caseItem.id}/images/${image.id}/edit`}
+    className="admin-primary-link"
+  >
+    Edit image
+  </Link>
+
+  <CaseImageDeleteButton
+    imageId={image.id}
+    imageTitle={image.title}
+  />
+</div>
                 </div>
               </article>
             ))}
