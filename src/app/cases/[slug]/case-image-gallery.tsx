@@ -47,6 +47,16 @@ type ImageLoadError = {
   requiresMembership: boolean;
 };
 
+type GalleryImageVariant =
+  | "featured"
+  | "preview"
+  | "archive";
+
+type LightboxState = {
+  image: CaseImage;
+  viewUrl: string;
+} | null;
+
 function formatImageDate(value: string | null) {
   if (!value) {
     return null;
@@ -98,13 +108,20 @@ async function loadImageUrl(imageId: string) {
   };
 }
 
-type LazyCaseImageProps = {
+type SecureGalleryImageProps = {
   image: CaseImage;
+  variant: GalleryImageVariant;
+  onOpen: (
+    image: CaseImage,
+    viewUrl: string,
+  ) => void;
 };
 
-function LazyCaseImage({
+function SecureGalleryImage({
   image,
-}: LazyCaseImageProps) {
+  variant,
+  onOpen,
+}: SecureGalleryImageProps) {
   const containerRef =
     useRef<HTMLDivElement | null>(null);
 
@@ -159,13 +176,6 @@ function LazyCaseImage({
       return;
     }
 
-    /*
-     * Begin preparing the image shortly before
-     * the viewer scrolls to it.
-     *
-     * This prevents large galleries from requesting
-     * every secure image URL simultaneously.
-     */
     const observer = new IntersectionObserver(
       (entries) => {
         const entry = entries[0];
@@ -195,41 +205,61 @@ function LazyCaseImage({
 
     void requestImage();
 
-    // requestImage intentionally runs once when
+    // requestImage intentionally runs when
     // this image approaches the viewport.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shouldLoad]);
 
+  const wrapperClassName =
+    variant === "featured"
+      ? "relative min-h-[320px] overflow-hidden border border-white/10 bg-black md:min-h-[520px]"
+      : variant === "preview"
+        ? "relative aspect-[4/3] overflow-hidden border border-white/10 bg-black"
+        : "relative aspect-[4/3] overflow-hidden border border-white/10 bg-black";
+
+  const imageClassName =
+    variant === "featured"
+      ? "h-full min-h-[320px] w-full object-contain md:min-h-[520px]"
+      : "h-full w-full object-cover transition duration-300 group-hover:scale-[1.025]";
+
   return (
-    <div
-      ref={containerRef}
-      className="mt-7"
-    >
+    <div ref={containerRef}>
       {viewUrl ? (
-        <div className="flex justify-center">
-          <div className="inline-flex max-w-full overflow-hidden border border-white/10 bg-black">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={viewUrl}
-              alt={image.caption ?? image.title}
-              loading="lazy"
-              decoding="async"
-              className="h-auto max-h-[600px] w-auto max-w-full object-contain md:max-w-[800px]"
-            />
-          </div>
-        </div>
+        <button
+          type="button"
+          onClick={() => {
+            onOpen(image, viewUrl);
+          }}
+          className={`group block w-full cursor-zoom-in text-left ${wrapperClassName}`}
+          aria-label={`Open ${image.title} in image viewer`}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={viewUrl}
+            alt={image.caption ?? image.title}
+            loading="lazy"
+            decoding="async"
+            className={imageClassName}
+          />
+
+          <span className="absolute bottom-3 right-3 border border-white/20 bg-black/75 px-3 py-2 text-[9px] font-extrabold uppercase tracking-[0.14em] text-white backdrop-blur-sm">
+            View larger
+          </span>
+        </button>
       ) : imageError ? (
-        <div className="mx-auto grid min-h-64 max-w-[800px] place-items-center border border-white/10 bg-black px-6 py-12 text-center">
-          <div className="max-w-xl">
-            <p className="text-base leading-7 text-[#c8cbd0]">
+        <div
+          className={`${wrapperClassName} grid place-items-center px-5 py-8 text-center`}
+        >
+          <div className="max-w-sm">
+            <p className="text-sm leading-6 text-[#c8cbd0]">
               {imageError.message}
             </p>
 
-            <div className="mt-6 flex flex-wrap justify-center gap-3">
+            <div className="mt-5 flex flex-wrap justify-center gap-3">
               {imageError.requiresSignIn ? (
                 <Link
                   href="/login"
-                  className="inline-flex min-h-12 items-center justify-center border border-white/15 px-5 text-xs font-extrabold uppercase tracking-[0.1em] text-[#d8d9dc] transition hover:border-white/30"
+                  className="inline-flex min-h-11 items-center justify-center border border-white/15 px-4 text-[10px] font-extrabold uppercase tracking-[0.1em] text-[#d8d9dc] transition hover:border-white/30"
                 >
                   Sign in
                 </Link>
@@ -238,9 +268,9 @@ function LazyCaseImage({
               {imageError.requiresMembership ? (
                 <Link
                   href="/membership"
-                  className="inline-flex min-h-12 items-center justify-center border border-[#c8a66a] bg-[#c8a66a] px-5 text-xs font-extrabold uppercase tracking-[0.1em] text-[#111318] transition hover:bg-[#e1c58f]"
+                  className="inline-flex min-h-11 items-center justify-center border border-[#c8a66a] bg-[#c8a66a] px-4 text-[10px] font-extrabold uppercase tracking-[0.1em] text-[#111318] transition hover:bg-[#e1c58f]"
                 >
-                  View membership
+                  Membership
                 </Link>
               ) : null}
 
@@ -253,7 +283,7 @@ function LazyCaseImage({
                     void requestImage();
                   }}
                   disabled={loading}
-                  className="inline-flex min-h-12 items-center justify-center border border-[#c8a66a] px-5 text-xs font-extrabold uppercase tracking-[0.1em] text-[#e1c58f] transition hover:bg-[#c8a66a]/10 disabled:cursor-wait disabled:opacity-60"
+                  className="inline-flex min-h-11 items-center justify-center border border-[#c8a66a] px-4 text-[10px] font-extrabold uppercase tracking-[0.1em] text-[#e1c58f] transition hover:bg-[#c8a66a]/10 disabled:cursor-wait disabled:opacity-60"
                 >
                   {loading
                     ? "Preparing…"
@@ -264,16 +294,271 @@ function LazyCaseImage({
           </div>
         </div>
       ) : (
-        <div className="mx-auto grid min-h-64 max-w-[800px] place-items-center border border-white/10 bg-black px-6 text-center text-[#a8adb5]">
+        <div
+          className={`${wrapperClassName} grid place-items-center px-5 text-center`}
+        >
           <div>
-            <p className="text-sm">
+            <div className="mx-auto h-7 w-7 animate-pulse rounded-full border border-[#c8a66a]/50" />
+
+            <p className="mt-4 text-xs uppercase tracking-[0.12em] text-[#747b84]">
               {shouldLoad || loading
-                ? "Preparing secure image…"
-                : "Image will load as you scroll…"}
+                ? "Preparing secure image"
+                : "Image loads as you scroll"}
             </p>
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+type ImageBadgesProps = {
+  image: CaseImage;
+};
+
+function ImageBadges({
+  image,
+}: ImageBadgesProps) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      <span className="border border-white/10 px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-[0.12em] text-[#a8adb5]">
+        {image.access_level === "public"
+          ? "Public"
+          : "Members only"}
+      </span>
+
+      {image.is_disturbing ? (
+        <span className="border border-red-400/30 bg-red-400/10 px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-[0.12em] text-red-200">
+          Sensitive
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
+type ImageDetailsProps = {
+  image: CaseImage;
+  compact?: boolean;
+};
+
+function ImageDetails({
+  image,
+  compact = false,
+}: ImageDetailsProps) {
+  const formattedDate =
+    formatImageDate(image.image_date);
+
+  return (
+    <div>
+      <ImageBadges image={image} />
+
+      <h3
+        className={
+          compact
+            ? "mt-3 font-serif text-xl font-medium leading-tight text-[#f4f1e9] md:text-2xl"
+            : "mt-4 font-serif text-3xl font-medium leading-tight text-[#f4f1e9] md:text-4xl"
+        }
+      >
+        {image.title}
+      </h3>
+
+      {image.caption ? (
+        <p
+          className={
+            compact
+              ? "mt-2 line-clamp-2 text-sm leading-6 text-[#a8adb5]"
+              : "mt-4 max-w-3xl text-base leading-7 text-[#c8cbd0]"
+          }
+        >
+          {image.caption}
+        </p>
+      ) : null}
+
+      {!compact &&
+      (image.source_name ||
+        image.source_reference ||
+        formattedDate) ? (
+        <div className="mt-5 flex flex-wrap gap-x-7 gap-y-2 text-sm text-[#858c95]">
+          {image.source_name ? (
+            <span>
+              Source: {image.source_name}
+            </span>
+          ) : null}
+
+          {image.source_reference ? (
+            <span>
+              Reference:{" "}
+              {image.source_reference}
+            </span>
+          ) : null}
+
+          {formattedDate ? (
+            <span>
+              Image date: {formattedDate}
+            </span>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+type ImageLightboxProps = {
+  lightbox: LightboxState;
+  onClose: () => void;
+};
+
+function ImageLightbox({
+  lightbox,
+  onClose,
+}: ImageLightboxProps) {
+  useEffect(() => {
+    if (!lightbox) {
+      return;
+    }
+
+    function handleKeyDown(
+      event: KeyboardEvent,
+    ) {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    }
+
+    document.addEventListener(
+      "keydown",
+      handleKeyDown,
+    );
+
+    const previousOverflow =
+      document.body.style.overflow;
+
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.removeEventListener(
+        "keydown",
+        handleKeyDown,
+      );
+
+      document.body.style.overflow =
+        previousOverflow;
+    };
+  }, [lightbox, onClose]);
+
+  if (!lightbox) {
+    return null;
+  }
+
+  const formattedDate =
+    formatImageDate(
+      lightbox.image.image_date,
+    );
+
+  return (
+    <div
+      className="fixed inset-0 z-[100] bg-black/95"
+      role="dialog"
+      aria-modal="true"
+      aria-label={lightbox.image.title}
+      onMouseDown={(event) => {
+        if (event.currentTarget === event.target) {
+          onClose();
+        }
+      }}
+    >
+      <div className="flex h-full flex-col">
+        <div className="flex min-h-16 items-center justify-between gap-5 border-b border-white/10 px-4 md:px-6">
+          <div className="min-w-0">
+            <p className="truncate font-serif text-lg text-[#f4f1e9] md:text-xl">
+              {lightbox.image.title}
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={onClose}
+            className="shrink-0 border border-white/15 px-4 py-2 text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#d8d9dc] transition hover:border-white/35 hover:text-white"
+          >
+            Close
+          </button>
+        </div>
+
+        <div className="grid min-h-0 flex-1 overflow-y-auto lg:grid-cols-[minmax(0,1fr)_360px]">
+          <div className="grid min-h-[60vh] place-items-center bg-black p-4 md:p-8">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={lightbox.viewUrl}
+              alt={
+                lightbox.image.caption ??
+                lightbox.image.title
+              }
+              className="max-h-[82vh] max-w-full object-contain"
+            />
+          </div>
+
+          <aside className="border-t border-white/10 bg-[#0d1117] p-6 lg:border-l lg:border-t-0 lg:p-8">
+            <ImageBadges
+              image={lightbox.image}
+            />
+
+            <h2 className="mt-5 font-serif text-3xl font-medium leading-tight text-[#f4f1e9]">
+              {lightbox.image.title}
+            </h2>
+
+            {lightbox.image.caption ? (
+              <p className="mt-5 text-base leading-7 text-[#c8cbd0]">
+                {lightbox.image.caption}
+              </p>
+            ) : null}
+
+            <dl className="mt-8 border-t border-white/10 text-sm">
+              {lightbox.image.source_name ? (
+                <div className="border-b border-white/10 py-4">
+                  <dt className="text-[9px] font-extrabold uppercase tracking-[0.14em] text-[#747b84]">
+                    Source
+                  </dt>
+
+                  <dd className="mt-2 leading-6 text-[#c8cbd0]">
+                    {
+                      lightbox.image
+                        .source_name
+                    }
+                  </dd>
+                </div>
+              ) : null}
+
+              {lightbox.image
+                .source_reference ? (
+                <div className="border-b border-white/10 py-4">
+                  <dt className="text-[9px] font-extrabold uppercase tracking-[0.14em] text-[#747b84]">
+                    Reference
+                  </dt>
+
+                  <dd className="mt-2 break-words leading-6 text-[#c8cbd0]">
+                    {
+                      lightbox.image
+                        .source_reference
+                    }
+                  </dd>
+                </div>
+              ) : null}
+
+              {formattedDate ? (
+                <div className="border-b border-white/10 py-4">
+                  <dt className="text-[9px] font-extrabold uppercase tracking-[0.14em] text-[#747b84]">
+                    Image date
+                  </dt>
+
+                  <dd className="mt-2 text-[#c8cbd0]">
+                    {formattedDate}
+                  </dd>
+                </div>
+              ) : null}
+            </dl>
+          </aside>
+        </div>
+      </div>
     </div>
   );
 }
@@ -307,6 +592,12 @@ export default function CaseImageGallery({
     setRestrictedImageCount,
   ] = useState(0);
 
+  const [archiveExpanded, setArchiveExpanded] =
+    useState(false);
+
+  const [lightbox, setLightbox] =
+    useState<LightboxState>(null);
+
   async function handleAcknowledge() {
     if (loading) {
       return;
@@ -316,19 +607,13 @@ export default function CaseImageGallery({
     setError("");
 
     try {
-      /*
-       * Only fetch image metadata here.
-       *
-       * Individual secure image URLs are requested
-       * later by LazyCaseImage when each photograph
-       * approaches the viewport.
-       */
       const response = await fetch(
         "/api/public/case-images",
         {
           method: "POST",
           headers: {
-            "Content-Type": "application/json",
+            "Content-Type":
+              "application/json",
           },
           cache: "no-store",
           body: JSON.stringify({
@@ -376,6 +661,25 @@ export default function CaseImageGallery({
     }
   }
 
+  function openLightbox(
+    image: CaseImage,
+    viewUrl: string,
+  ) {
+    setLightbox({
+      image,
+      viewUrl,
+    });
+  }
+
+  const featuredImage =
+    images[0] ?? null;
+
+  const previewImages =
+    images.slice(1, 5);
+
+  const remainingImages =
+    images.slice(5);
+
   if (!acknowledged) {
     return (
       <section className="border-t border-white/10 bg-[#0d1117] px-5 py-16 md:px-10 md:py-20 lg:px-16 lg:py-24">
@@ -385,8 +689,14 @@ export default function CaseImageGallery({
           </p>
 
           <h2 className="mt-5 font-serif text-5xl font-medium text-[#f4f1e9] md:text-7xl">
-            Case images
+            Case Image Archive
           </h2>
+
+          <p className="mt-6 max-w-3xl text-lg leading-8 text-[#a8adb5]">
+            Photographs, visual evidence, and
+            documented images from the public
+            record.
+          </p>
 
           <div className="mt-10 max-w-4xl border border-[#c8a66a]/40 bg-[#c8a66a]/5 p-7 md:p-10">
             <p className="m-0 text-xs font-extrabold uppercase tracking-[0.16em] text-[#e1c58f]">
@@ -438,136 +748,217 @@ export default function CaseImageGallery({
   }
 
   return (
-    <section className="border-t border-white/10 bg-[#0d1117] px-5 py-16 md:px-10 md:py-20 lg:px-16 lg:py-24">
-      <div className="mx-auto max-w-[1500px]">
-        <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-[#e1c58f]">
-          Visual evidence
-        </p>
+    <>
+      <section className="border-t border-white/10 bg-[#0d1117] px-5 py-16 md:px-10 md:py-20 lg:px-16 lg:py-24">
+        <div className="mx-auto max-w-[1500px]">
+          <div className="flex flex-col justify-between gap-7 border-b border-white/10 pb-8 md:flex-row md:items-end">
+            <div>
+              <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-[#e1c58f]">
+                Visual evidence
+              </p>
 
-        <h2 className="mt-5 font-serif text-5xl font-medium text-[#f4f1e9] md:text-7xl">
-          Case images
-        </h2>
+              <h2 className="mt-4 font-serif text-5xl font-medium text-[#f4f1e9] md:text-7xl">
+                Case Image Archive
+              </h2>
 
-        {images.length > 0 ? (
-          <div className="mt-12 grid gap-12">
-            {images.map((image, index) => {
-              const formattedDate =
-                formatImageDate(
-                  image.image_date,
-                );
-
-              return (
-                <article
-                  key={image.id}
-                  className="border-t border-white/10 pt-8"
-                >
-                  <div className="mx-auto max-w-5xl">
-                    <div className="mb-5 flex flex-wrap items-center gap-2">
-                      <span className="mr-2 font-serif text-2xl text-[#c8a66a]">
-                        {String(
-                          index + 1,
-                        ).padStart(2, "0")}
-                      </span>
-
-                      <span className="border border-white/10 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#a8adb5]">
-                        {image.access_level ===
-                        "public"
-                          ? "Public"
-                          : "Members only"}
-                      </span>
-
-                      {image.is_disturbing ? (
-                        <span className="border border-red-400/30 bg-red-400/10 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.12em] text-red-200">
-                          Sensitive
-                        </span>
-                      ) : null}
-                    </div>
-
-                    <h3 className="font-serif text-3xl font-medium text-[#f4f1e9] md:text-4xl">
-                      {image.title}
-                    </h3>
-
-                    <LazyCaseImage
-                      image={image}
-                    />
-
-                    <div className="mx-auto mt-6 max-w-[800px]">
-                      {image.caption ? (
-                        <p className="text-base leading-7 text-[#c8cbd0]">
-                          {image.caption}
-                        </p>
-                      ) : null}
-
-                      <div className="mt-4 flex flex-wrap gap-x-7 gap-y-2 text-sm text-[#858c95]">
-                        {image.source_name ? (
-                          <span>
-                            Source:{" "}
-                            {
-                              image.source_name
-                            }
-                          </span>
-                        ) : null}
-
-                        {image.source_reference ? (
-                          <span>
-                            Reference:{" "}
-                            {
-                              image.source_reference
-                            }
-                          </span>
-                        ) : null}
-
-                        {formattedDate ? (
-                          <span>
-                            Image date:{" "}
-                            {formattedDate}
-                          </span>
-                        ) : null}
-                      </div>
-                    </div>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-        ) : (
-          <p className="mt-10 text-lg text-[#a8adb5]">
-            No case images are currently
-            available to this viewer.
-          </p>
-        )}
-
-        {restrictedImageCount > 0 &&
-        !hasMemberAccess ? (
-          <div className="mt-12 max-w-4xl border border-[#c8a66a]/40 bg-[#c8a66a]/5 p-7">
-            <p className="text-lg leading-8 text-[#c8cbd0]">
-              {restrictedImageCount} additional{" "}
-              {restrictedImageCount === 1
-                ? "image is"
-                : "images are"}{" "}
-              available to active members.
-            </p>
-
-            <div className="mt-6 flex flex-wrap gap-3">
-              {!signedIn ? (
-                <Link
-                  href="/login"
-                  className="inline-flex min-h-12 items-center justify-center border border-white/15 px-5 text-xs font-extrabold uppercase tracking-[0.1em] text-[#d8d9dc] transition hover:border-white/30"
-                >
-                  Sign in
-                </Link>
-              ) : null}
-
-              <Link
-                href="/membership"
-                className="inline-flex min-h-12 items-center justify-center border border-[#c8a66a] bg-[#c8a66a] px-5 text-xs font-extrabold uppercase tracking-[0.1em] text-[#111318] transition hover:bg-[#e1c58f]"
-              >
-                View membership
-              </Link>
+              <p className="mt-5 max-w-3xl text-base leading-7 text-[#a8adb5] md:text-lg md:leading-8">
+                Photographs, visual evidence, and
+                documented images preserved from
+                the public record.
+              </p>
             </div>
+
+            {images.length > 0 ? (
+              <div className="shrink-0 md:text-right">
+                <span className="font-serif text-5xl text-[#e1c58f]">
+                  {images.length}
+                </span>
+
+                <p className="mt-1 text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#747b84]">
+                  {images.length === 1
+                    ? "Available image"
+                    : "Available images"}
+                </p>
+              </div>
+            ) : null}
           </div>
-        ) : null}
-      </div>
-    </section>
+
+          {featuredImage ? (
+            <div className="mt-10">
+              <div
+                className={
+                  previewImages.length > 0
+                    ? "grid gap-5 lg:grid-cols-[minmax(0,1.55fr)_minmax(330px,0.75fr)]"
+                    : ""
+                }
+              >
+                <div>
+                  <SecureGalleryImage
+                    image={featuredImage}
+                    variant="featured"
+                    onOpen={openLightbox}
+                  />
+
+                  <div className="mt-6">
+                    <ImageDetails
+                      image={featuredImage}
+                    />
+                  </div>
+                </div>
+
+                {previewImages.length > 0 ? (
+                  <div className="grid grid-cols-2 gap-5 self-start">
+                    {previewImages.map(
+                      (image) => (
+                        <article
+                          key={image.id}
+                          className="min-w-0"
+                        >
+                          <SecureGalleryImage
+                            image={image}
+                            variant="preview"
+                            onOpen={
+                              openLightbox
+                            }
+                          />
+
+                          <div className="mt-3">
+                            <ImageDetails
+                              image={image}
+                              compact
+                            />
+                          </div>
+                        </article>
+                      ),
+                    )}
+                  </div>
+                ) : null}
+              </div>
+
+              {remainingImages.length > 0 ? (
+                <div className="mt-12 border-t border-white/10 pt-8">
+                  <div className="flex flex-col justify-between gap-5 md:flex-row md:items-center">
+                    <div>
+                      <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-[#e1c58f]">
+                        Complete archive
+                      </p>
+
+                      <p className="mt-2 text-base leading-7 text-[#a8adb5]">
+                        {remainingImages.length}{" "}
+                        additional{" "}
+                        {remainingImages.length ===
+                        1
+                          ? "image"
+                          : "images"}{" "}
+                        in this case collection.
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setArchiveExpanded(
+                          (current) =>
+                            !current,
+                        );
+                      }}
+                      className="inline-flex min-h-12 items-center justify-center border border-[#c8a66a] px-6 text-xs font-extrabold uppercase tracking-[0.1em] text-[#e1c58f] transition hover:bg-[#c8a66a] hover:text-[#111318]"
+                    >
+                      {archiveExpanded
+                        ? "Hide additional images"
+                        : `View all ${images.length} images`}
+                    </button>
+                  </div>
+
+                  {archiveExpanded ? (
+                    <div className="mt-9 grid gap-x-5 gap-y-9 sm:grid-cols-2 lg:grid-cols-3">
+                      {remainingImages.map(
+                        (image, index) => (
+                          <article
+                            key={image.id}
+                            className="min-w-0"
+                          >
+                            <div className="mb-3 flex items-center justify-between gap-3">
+                              <span className="font-serif text-xl text-[#8d744b]">
+                                {String(
+                                  index + 6,
+                                ).padStart(
+                                  2,
+                                  "0",
+                                )}
+                              </span>
+                            </div>
+
+                            <SecureGalleryImage
+                              image={image}
+                              variant="archive"
+                              onOpen={
+                                openLightbox
+                              }
+                            />
+
+                            <div className="mt-4">
+                              <ImageDetails
+                                image={image}
+                                compact
+                              />
+                            </div>
+                          </article>
+                        ),
+                      )}
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
+          ) : (
+            <div className="mt-10 border border-white/10 bg-[#10151b] p-8">
+              <p className="m-0 text-lg text-[#a8adb5]">
+                No case images are currently
+                available to this viewer.
+              </p>
+            </div>
+          )}
+
+          {restrictedImageCount > 0 &&
+          !hasMemberAccess ? (
+            <div className="mt-12 max-w-4xl border border-[#c8a66a]/40 bg-[#c8a66a]/5 p-7">
+              <p className="text-lg leading-8 text-[#c8cbd0]">
+                {restrictedImageCount} additional{" "}
+                {restrictedImageCount === 1
+                  ? "image is"
+                  : "images are"}{" "}
+                available to active members.
+              </p>
+
+              <div className="mt-6 flex flex-wrap gap-3">
+                {!signedIn ? (
+                  <Link
+                    href="/login"
+                    className="inline-flex min-h-12 items-center justify-center border border-white/15 px-5 text-xs font-extrabold uppercase tracking-[0.1em] text-[#d8d9dc] transition hover:border-white/30"
+                  >
+                    Sign in
+                  </Link>
+                ) : null}
+
+                <Link
+                  href="/membership"
+                  className="inline-flex min-h-12 items-center justify-center border border-[#c8a66a] bg-[#c8a66a] px-5 text-xs font-extrabold uppercase tracking-[0.1em] text-[#111318] transition hover:bg-[#e1c58f]"
+                >
+                  View membership
+                </Link>
+              </div>
+            </div>
+          ) : null}
+        </div>
+      </section>
+
+      <ImageLightbox
+        lightbox={lightbox}
+        onClose={() => {
+          setLightbox(null);
+        }}
+      />
+    </>
   );
 }
