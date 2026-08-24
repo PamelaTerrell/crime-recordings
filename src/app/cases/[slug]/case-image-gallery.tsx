@@ -8,12 +8,6 @@ import {
   useState,
 } from "react";
 
-/*
- * =========================================================
- * TYPES
- * =========================================================
- */
-
 type CaseImage = {
   id: string;
   title: string;
@@ -64,12 +58,6 @@ type LightboxState = {
   viewUrl: string;
   index: number;
 } | null;
-
-/*
- * =========================================================
- * HELPERS
- * =========================================================
- */
 
 function formatImageDate(
   value: string | null,
@@ -137,12 +125,6 @@ async function loadImageUrl(
   };
 }
 
-/*
- * =========================================================
- * IMAGE BADGES
- * =========================================================
- */
-
 type ImageBadgesProps = {
   image: CaseImage;
 };
@@ -166,12 +148,6 @@ function ImageBadges({
     </div>
   );
 }
-
-/*
- * =========================================================
- * IMAGE DETAILS
- * =========================================================
- */
 
 type ImageDetailsProps = {
   image: CaseImage;
@@ -239,9 +215,7 @@ function ImageDetails({
               </dt>
 
               <dd>
-                {
-                  image.source_reference
-                }
+                {image.source_reference}
               </dd>
             </div>
           ) : null}
@@ -262,16 +236,6 @@ function ImageDetails({
     </div>
   );
 }
-
-/*
- * =========================================================
- * SECURE LAZY IMAGE
- *
- * Secure URLs are requested only when the image approaches
- * the viewport rather than requesting the entire archive at
- * once.
- * =========================================================
- */
 
 type SecureGalleryImageProps = {
   image: CaseImage;
@@ -536,12 +500,6 @@ function SecureGalleryImage({
   );
 }
 
-/*
- * =========================================================
- * LIGHTBOX
- * =========================================================
- */
-
 type ImageLightboxProps = {
   lightbox: LightboxState;
   images: CaseImage[];
@@ -607,6 +565,9 @@ function ImageLightbox({
       return;
     }
 
+    const currentLightbox =
+      lightbox;
+
     const previousOverflow =
       document.body.style.overflow;
 
@@ -626,21 +587,21 @@ function ImageLightbox({
       if (
         event.key ===
           "ArrowRight" &&
-        lightbox.index <
+        currentLightbox.index <
           images.length - 1
       ) {
         void handleNavigate(
-          lightbox.index + 1,
+          currentLightbox.index + 1,
         );
       }
 
       if (
         event.key ===
           "ArrowLeft" &&
-        lightbox.index > 0
+        currentLightbox.index > 0
       ) {
         void handleNavigate(
-          lightbox.index - 1,
+          currentLightbox.index - 1,
         );
       }
     }
@@ -700,7 +661,6 @@ function ImageLightbox({
       }}
     >
       <div className="flex h-full flex-col">
-        {/* VIEWER HEADER */}
         <div className="flex min-h-16 items-center justify-between gap-4 border-b border-white/10 bg-[#080b0f] px-4 md:px-6">
           <div className="min-w-0">
             <p className="text-[9px] font-extrabold uppercase tracking-[0.14em] text-[#8d744b]">
@@ -733,7 +693,6 @@ function ImageLightbox({
         </div>
 
         <div className="grid min-h-0 flex-1 overflow-y-auto lg:grid-cols-[minmax(0,1fr)_380px]">
-          {/* IMAGE */}
           <div className="relative grid min-h-[60vh] place-items-center bg-black p-4 md:p-8">
             {navigating ? (
               <div className="absolute inset-0 z-10 grid place-items-center bg-black/70">
@@ -761,7 +720,6 @@ function ImageLightbox({
               className="max-h-[82vh] max-w-full object-contain"
             />
 
-            {/* PREVIOUS */}
             {hasPrevious ? (
               <button
                 type="button"
@@ -781,7 +739,6 @@ function ImageLightbox({
               </button>
             ) : null}
 
-            {/* NEXT */}
             {hasNext ? (
               <button
                 type="button"
@@ -802,7 +759,6 @@ function ImageLightbox({
             ) : null}
           </div>
 
-          {/* IMAGE DETAILS */}
           <aside className="border-t border-white/10 bg-[#0d1117] p-6 lg:border-l lg:border-t-0 lg:p-8">
             <ImageBadges
               image={
@@ -917,12 +873,6 @@ function ImageLightbox({
   );
 }
 
-/*
- * =========================================================
- * MAIN CASE IMAGE ARCHIVE
- * =========================================================
- */
-
 export default function CaseImageGallery({
   caseId,
 }: CaseImageGalleryProps) {
@@ -970,11 +920,6 @@ export default function CaseImageGallery({
       null,
     );
 
-  /*
-   * Fetch only the image metadata
-   * after the user acknowledges the
-   * content warning.
-   */
   async function handleAcknowledge() {
     if (loading) {
       return;
@@ -1048,9 +993,6 @@ export default function CaseImageGallery({
     }
   }
 
-  /*
-   * Open an already-loaded image.
-   */
   const openLightbox =
     useCallback(
       (
@@ -1067,11 +1009,6 @@ export default function CaseImageGallery({
       [],
     );
 
-  /*
-   * Load the secure URL when moving
-   * forward/backward inside the
-   * viewer.
-   */
   const navigateLightbox =
     useCallback(
       async (
@@ -1114,13 +1051,6 @@ export default function CaseImageGallery({
       setLightbox(null);
     }, []);
 
-  /*
-   * Gallery hierarchy
-   *
-   * Image 1 = featured
-   * Images 2–5 = preview grid
-   * Images 6+ = complete archive
-   */
   const featuredImage =
     images[0] ?? null;
 
@@ -1129,12 +1059,6 @@ export default function CaseImageGallery({
 
   const remainingImages =
     images.slice(5);
-
-  /*
-   * =======================================================
-   * CONTENT WARNING / ARCHIVE ACCESS GATE
-   * =======================================================
-   */
 
   if (!acknowledged) {
     return (
@@ -1159,7 +1083,6 @@ export default function CaseImageGallery({
           </div>
 
           <div className="mt-9 max-w-5xl overflow-hidden border border-[#c8a66a]/40 bg-[#c8a66a]/5">
-            {/* WARNING HEADER */}
             <div className="border-b border-[#c8a66a]/20 px-6 py-5 md:px-8">
               <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div>
@@ -1184,7 +1107,6 @@ export default function CaseImageGallery({
               </div>
             </div>
 
-            {/* WARNING BODY */}
             <div className="px-6 py-7 md:px-8 md:py-8">
               <p className="max-w-4xl text-lg leading-8 text-[#c8cbd0]">
                 This case archive
@@ -1205,7 +1127,6 @@ export default function CaseImageGallery({
                 archive.
               </p>
 
-              {/* ARCHIVE DETAILS */}
               <div className="mt-7 grid gap-5 border-y border-white/10 py-5 sm:grid-cols-3">
                 <div>
                   <p className="text-[9px] font-extrabold uppercase tracking-[0.14em] text-[#747b84]">
@@ -1250,7 +1171,6 @@ export default function CaseImageGallery({
                 </p>
               ) : null}
 
-              {/* ACTIONS */}
               <div className="mt-7 flex flex-col gap-3 sm:flex-row">
                 <a
                   href="#case-overview"
@@ -1290,17 +1210,10 @@ export default function CaseImageGallery({
     );
   }
 
-  /*
-   * =======================================================
-   * IMAGE ARCHIVE
-   * =======================================================
-   */
-
   return (
     <>
       <section className="border-t border-white/10 bg-[#0d1117] px-5 py-16 md:px-10 md:py-20 lg:px-16 lg:py-24">
         <div className="mx-auto max-w-[1500px]">
-          {/* ARCHIVE HEADER */}
           <div className="flex flex-col justify-between gap-7 border-b border-white/10 pb-8 md:flex-row md:items-end">
             <div>
               <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-[#e1c58f]">
@@ -1341,7 +1254,6 @@ export default function CaseImageGallery({
 
           {featuredImage ? (
             <div className="mt-10">
-              {/* FEATURED + PREVIEW GRID */}
               <div
                 className={
                   previewImages.length >
@@ -1350,7 +1262,6 @@ export default function CaseImageGallery({
                     : ""
                 }
               >
-                {/* FEATURED IMAGE */}
                 <article>
                   <SecureGalleryImage
                     image={
@@ -1372,7 +1283,6 @@ export default function CaseImageGallery({
                   </div>
                 </article>
 
-                {/* PREVIEW IMAGES */}
                 {previewImages.length >
                 0 ? (
                   <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-2">
@@ -1416,7 +1326,6 @@ export default function CaseImageGallery({
                 ) : null}
               </div>
 
-              {/* COMPLETE ARCHIVE */}
               {remainingImages.length >
               0 ? (
                 <div className="mt-14 border-t border-white/10 pt-9">
@@ -1532,7 +1441,6 @@ export default function CaseImageGallery({
             </div>
           )}
 
-          {/* RESTRICTED MEMBER IMAGES */}
           {restrictedImageCount >
             0 &&
           !hasMemberAccess ? (
