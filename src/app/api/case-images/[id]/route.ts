@@ -4,6 +4,149 @@ import { NextResponse } from "next/server";
 import { r2BucketName, r2Client } from "@/lib/r2";
 import { createClient } from "@/lib/supabase/server";
 
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  try {
+    const supabase = await createClient();
+
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      return NextResponse.json(
+        { error: "You must be signed in." },
+        { status: 401 },
+      );
+    }
+
+    const { data: roleRecord, error: roleError } =
+      await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+    if (roleError) {
+      return NextResponse.json(
+        { error: "Unable to verify account role." },
+        { status: 500 },
+      );
+    }
+
+    if (
+      roleRecord?.role !== "admin" &&
+      roleRecord?.role !== "editor"
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "You do not have permission to manage case images.",
+        },
+        { status: 403 },
+      );
+    }
+
+    const { id } = await params;
+    const body = await request.json();
+
+    if (typeof body.isPublicTeaser !== "boolean") {
+      return NextResponse.json(
+        { error: "Please select a valid teaser setting." },
+        { status: 400 },
+      );
+    }
+
+    const { data: caseImage, error: imageError } =
+      await supabase
+        .from("case_images")
+        .select(
+          "id, case_id, object_key, is_published, is_public_teaser",
+        )
+        .eq("id", id)
+        .maybeSingle();
+
+    if (imageError) {
+      return NextResponse.json(
+        { error: "Unable to load the case image." },
+        { status: 500 },
+      );
+    }
+
+    if (!caseImage) {
+      return NextResponse.json(
+        { error: "The case image could not be found." },
+        { status: 404 },
+      );
+    }
+
+    if (
+      body.isPublicTeaser &&
+      (!caseImage.is_published || !caseImage.object_key)
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "A public archive teaser must be published and have an image file.",
+        },
+        { status: 400 },
+      );
+    }
+
+    const { error: updateError } = await supabase
+      .from("case_images")
+      .update({
+        is_public_teaser: body.isPublicTeaser,
+      })
+      .eq("id", id);
+
+    if (updateError) {
+      if (
+        updateError.code === "23505" ||
+        updateError.code === "23514"
+      ) {
+        return NextResponse.json(
+          {
+            error:
+              "The public archive teaser setting is no longer valid.",
+          },
+          { status: 409 },
+        );
+      }
+
+      return NextResponse.json(
+        {
+          error:
+            "The public archive teaser could not be updated.",
+        },
+        { status: 500 },
+      );
+    }
+
+    revalidatePath("/admin");
+    revalidatePath(`/admin/cases/${caseImage.case_id}`);
+    revalidatePath("/cases");
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error(
+      "Unable to update case-image teaser:",
+      error,
+    );
+
+    return NextResponse.json(
+      {
+        error:
+          "The public archive teaser could not be updated.",
+      },
+      { status: 500 },
+    );
+  }
+}
+
 export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -59,7 +202,7 @@ export async function DELETE(
 
     const { data: caseImage, error: imageError } = await supabase
       .from("case_images")
-      .select("id, case_id, object_key")
+      .select("id, case_id, object_key, is_public_teaser")
       .eq("id", id)
       .maybeSingle();
 
@@ -75,6 +218,29 @@ export async function DELETE(
         { error: "The case image could not be found." },
         { status: 404 },
       );
+    }
+
+    if (caseImage.is_public_teaser) {
+      const { error: clearTeaserError } = await supabase
+        .from("case_images")
+        .update({
+          is_public_teaser: false,
+        })
+        .eq("id", id);
+
+      if (clearTeaserError) {
+        return NextResponse.json(
+          {
+            error:
+              "The public archive teaser designation could not be cleared.",
+          },
+          { status: 500 },
+        );
+      }
+
+      revalidatePath("/admin");
+      revalidatePath(`/admin/cases/${caseImage.case_id}`);
+      revalidatePath("/cases");
     }
 
     if (caseImage.object_key) {

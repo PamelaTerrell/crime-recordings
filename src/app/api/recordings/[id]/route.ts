@@ -312,29 +312,6 @@ export async function PATCH(
       }
     }
 
-    if (isPublicTeaser) {
-      const { error: clearTeaserError } = await supabase
-        .from("recordings")
-        .update({
-          is_public_teaser: false,
-          updated_by: user.id,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("case_id", currentRecording.case_id)
-        .neq("id", id)
-        .eq("is_public_teaser", true);
-
-      if (clearTeaserError) {
-        return NextResponse.json(
-          {
-            error:
-              "The existing public archive teaser could not be replaced.",
-          },
-          { status: 500 },
-        );
-      }
-    }
-
     const { error: updateError } = await supabase
       .from("recordings")
       .update({
@@ -370,7 +347,7 @@ export async function PATCH(
         return NextResponse.json(
           {
             error:
-              "The public archive teaser setting conflicts with another recording or is no longer valid.",
+              "The public archive teaser setting is no longer valid.",
           },
           { status: 409 },
         );

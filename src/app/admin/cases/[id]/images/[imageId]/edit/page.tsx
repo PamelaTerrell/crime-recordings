@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import CaseImageTeaserControl from "../../../case-image-teaser-control";
 
 type EditCaseImagePageProps = {
   params: Promise<{
@@ -76,6 +77,7 @@ export default async function EditCaseImagePage({
           file_size_bytes,
           access_level,
           is_published,
+          is_public_teaser,
           is_disturbing,
           sort_order
         `,
@@ -199,6 +201,22 @@ export default async function EditCaseImagePage({
       );
     }
 
+    const {
+      data: currentImage,
+      error: currentImageError,
+    } = await supabase
+      .from("case_images")
+      .select("id, is_public_teaser")
+      .eq("id", imageId)
+      .eq("case_id", id)
+      .maybeSingle();
+
+    if (currentImageError || !currentImage) {
+      throw new Error(
+        "The image could not be loaded for updating.",
+      );
+    }
+
     const { error: updateError } =
       await supabase
         .from("case_images")
@@ -222,6 +240,9 @@ export default async function EditCaseImagePage({
               : null,
           access_level: accessLevel,
           is_published: isPublished,
+          is_public_teaser:
+            isPublished &&
+            currentImage.is_public_teaser,
           is_disturbing: isDisturbing,
           sort_order: sortOrder,
         })
@@ -277,6 +298,16 @@ export default async function EditCaseImagePage({
             status, and display order.
           </p>
         </div>
+      </div>
+
+      <div className="mb-8 max-w-[430px]">
+        <CaseImageTeaserControl
+          key={`${image.id}:${image.is_public_teaser}`}
+          imageId={image.id}
+          imageTitle={image.title}
+          isPublished={image.is_published}
+          isPublicTeaser={image.is_public_teaser}
+        />
       </div>
 
       <form

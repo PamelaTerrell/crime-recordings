@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import CaseDangerActions from "./case-danger-actions";
 import CaseImageDeleteButton from "./case-image-delete-button";
+import CaseImageTeaserControl from "./case-image-teaser-control";
 import RecordingPlayer from "./recording-player";
 
 function formatFileSize(bytes: number | null) {
@@ -126,6 +127,7 @@ export default async function AdminCasePage({
         file_size_bytes,
         access_level,
         is_published,
+        is_public_teaser,
         is_disturbing,
         sort_order,
         created_at
@@ -479,6 +481,12 @@ export default async function AdminCasePage({
                           Sensitive
                         </span>
                       ) : null}
+
+                      {image.is_public_teaser ? (
+                        <span className="border border-[#c8a66a] bg-[#c8a66a]/10 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#e1c58f]">
+                          Public archive teaser
+                        </span>
+                      ) : null}
                     </div>
 
                     <h3 className="m-0 font-serif text-3xl font-medium text-[#f4f1e9]">
@@ -547,19 +555,29 @@ export default async function AdminCasePage({
                     ) : null}
                   </div>
 
-                  <div className="flex shrink-0 flex-col gap-3">
-  <Link
-    href={`/admin/cases/${caseItem.id}/images/${image.id}/edit`}
-    className="admin-primary-link"
-  >
-    Edit image
-  </Link>
+                  <div className="grid w-full shrink-0 gap-3 lg:w-[380px]">
+                    <CaseImageTeaserControl
+                      key={`${image.id}:${image.is_public_teaser}`}
+                      imageId={image.id}
+                      imageTitle={image.title}
+                      isPublished={image.is_published}
+                      isPublicTeaser={image.is_public_teaser}
+                    />
 
-  <CaseImageDeleteButton
-    imageId={image.id}
-    imageTitle={image.title}
-  />
-</div>
+                    <div className="flex flex-wrap gap-3">
+                      <Link
+                        href={`/admin/cases/${caseItem.id}/images/${image.id}/edit`}
+                        className="admin-primary-link"
+                      >
+                        Edit image
+                      </Link>
+
+                      <CaseImageDeleteButton
+                        imageId={image.id}
+                        imageTitle={image.title}
+                      />
+                    </div>
+                  </div>
                 </div>
               </article>
             ))}

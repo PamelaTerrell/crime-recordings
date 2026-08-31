@@ -455,8 +455,8 @@ export default async function CasesArchivePage({
      * other protected metadata is read.
      */
     const {
-      data: publicTeasers,
-      error: publicTeasersError,
+      data: recordingTeasers,
+      error: recordingTeasersError,
     } = await supabaseAdmin
       .from("recordings")
       .select("case_id, thumbnail_object_key")
@@ -464,17 +464,51 @@ export default async function CasesArchivePage({
       .eq("is_published", true)
       .eq("is_public_teaser", true);
 
-    if (publicTeasersError) {
+    if (recordingTeasersError) {
       throw new Error(
-        `Unable to load public teaser thumbnails: ${publicTeasersError.message}`,
+        `Unable to load recording teaser thumbnails: ${recordingTeasersError.message}`,
       );
     }
 
-    for (const teaser of publicTeasers ?? []) {
+    for (const teaser of recordingTeasers ?? []) {
       if (teaser.thumbnail_object_key) {
         thumbnailObjectKeys.set(
           teaser.case_id,
           teaser.thumbnail_object_key,
+        );
+      }
+    }
+
+    /*
+     * EXPLICIT CASE-IMAGE TEASERS
+     *
+     * These intentionally approved image
+     * objects take priority over recording
+     * teasers. The object key remains in this
+     * Server Component and is used only to
+     * produce the signed archive-card URL.
+     */
+    const {
+      data: imageTeasers,
+      error: imageTeasersError,
+    } = await supabaseAdmin
+      .from("case_images")
+      .select("case_id, object_key")
+      .in("case_id", caseIds)
+      .eq("is_published", true)
+      .eq("is_public_teaser", true);
+
+    if (imageTeasersError) {
+      throw new Error(
+        `Unable to load case-image teaser thumbnails: ${imageTeasersError.message}`,
+      );
+    }
+
+    for (const teaser of imageTeasers ?? []) {
+      if (teaser.object_key) {
+        thumbnailObjectKeys.set(
+          teaser.case_id,
+          teaser.object_key,
         );
       }
     }
