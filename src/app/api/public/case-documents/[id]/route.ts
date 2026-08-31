@@ -4,6 +4,10 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { r2BucketName, r2Client } from "@/lib/r2";
 
+const privateNoStoreHeaders = {
+  "Cache-Control": "private, no-store",
+};
+
 export async function GET(
   _request: Request,
   {
@@ -15,8 +19,24 @@ export async function GET(
   },
 ) {
   try {
-    const { id } = await params;
     const supabase = await createClient();
+
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      return NextResponse.json(
+        { error: "You must be signed in." },
+        {
+          status: 401,
+          headers: privateNoStoreHeaders,
+        },
+      );
+    }
+
+    const { id } = await params;
 
     const { data: document, error } = await supabase
       .from("case_documents")
@@ -124,7 +144,10 @@ export async function GET(
       },
     );
 
-    return NextResponse.redirect(documentUrl);
+    const response = NextResponse.redirect(documentUrl);
+    response.headers.set("Cache-Control", "private, no-store");
+
+    return response;
   } catch (error) {
     console.error(
       "Unable to prepare public case document:",

@@ -17,6 +17,10 @@ type PublicCasePageProps = {
 async function getPublishedCase(slug: string) {
   const supabase = await createClient();
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
   const { data: caseItem, error: caseError } =
     await supabase
       .from("cases")
@@ -173,6 +177,7 @@ async function getPublishedCase(slug: string) {
     caseItem,
     recordings: recordingsWithThumbnails,
     documents: documents ?? [],
+    isAuthenticated: Boolean(user),
   };
 }
 
@@ -319,6 +324,7 @@ export default async function PublicCasePage({
     caseItem,
     recordings,
     documents,
+    isAuthenticated,
   } = result;
 
   const memberRecordings = recordings.filter(
@@ -664,14 +670,23 @@ export default async function PublicCasePage({
                       </div>
 
                       <div className="md:pt-1">
-                        <a
-                          href={`/api/public/case-documents/${document.id}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex min-h-12 w-full items-center justify-center border border-[#c8a66a] px-5 text-xs font-extrabold uppercase tracking-[0.1em] text-[#e1c58f] transition hover:bg-[#c8a66a] hover:text-[#111318] md:w-auto"
-                        >
-                          View PDF
-                        </a>
+                        {isAuthenticated ? (
+                          <a
+                            href={`/api/public/case-documents/${document.id}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex min-h-12 w-full items-center justify-center border border-[#c8a66a] px-5 text-xs font-extrabold uppercase tracking-[0.1em] text-[#e1c58f] transition hover:bg-[#c8a66a] hover:text-[#111318] md:w-auto"
+                          >
+                            View PDF
+                          </a>
+                        ) : (
+                          <Link
+                            href="/login"
+                            className="inline-flex min-h-12 w-full items-center justify-center border border-[#c8a66a] px-5 text-xs font-extrabold uppercase tracking-[0.1em] text-[#e1c58f] transition hover:bg-[#c8a66a] hover:text-[#111318] md:w-auto"
+                          >
+                            Sign in to view PDF
+                          </Link>
+                        )}
                       </div>
                     </article>
                   );

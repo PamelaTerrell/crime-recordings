@@ -20,6 +20,7 @@ type RecordingPlayerProps = {
   accessLevel: string;
   isPublished: boolean;
   isFeatured: boolean;
+  isPublicTeaser: boolean;
   sortOrder: number;
 };
 
@@ -179,6 +180,7 @@ export default function RecordingPlayer({
   accessLevel,
   isPublished,
   isFeatured,
+  isPublicTeaser,
   sortOrder,
 }: RecordingPlayerProps) {
   const router = useRouter();
@@ -210,6 +212,8 @@ export default function RecordingPlayer({
     useState(isPublished);
   const [editedFeatured, setEditedFeatured] =
     useState(isFeatured);
+  const [editedPublicTeaser, setEditedPublicTeaser] =
+    useState(isPublicTeaser);
   const [editedSortOrder, setEditedSortOrder] =
     useState(sortOrder);
 
@@ -415,6 +419,7 @@ export default function RecordingPlayer({
             accessLevel: editedAccess,
             isPublished: editedPublished,
             isFeatured: editedFeatured,
+            isPublicTeaser: editedPublicTeaser,
             sortOrder: editedSortOrder,
           }),
         },
@@ -507,6 +512,12 @@ export default function RecordingPlayer({
             {thumbnailObjectKey ? (
               <span className="border border-emerald-400/30 bg-emerald-400/10 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.12em] text-emerald-200">
                 Thumbnail attached
+              </span>
+            ) : null}
+
+            {isPublicTeaser ? (
+              <span className="border border-[#c8a66a] bg-[#c8a66a]/10 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#e1c58f]">
+                Public archive teaser
               </span>
             ) : null}
 
@@ -805,6 +816,7 @@ export default function RecordingPlayer({
 
                     if (!checked) {
                       setEditedFeatured(false);
+                      setEditedPublicTeaser(false);
                     }
                   }}
                   disabled={pendingAction !== null}
@@ -819,6 +831,45 @@ export default function RecordingPlayer({
                   <small className="mt-1 block text-xs leading-5 text-[#747b84]">
                     Only published recordings can appear
                     publicly.
+                  </small>
+                </span>
+              </label>
+
+              <label
+                className={`flex items-start gap-3 ${
+                  !thumbnailObjectKey && !thumbnailFile
+                    ? "cursor-not-allowed opacity-50"
+                    : ""
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={editedPublicTeaser}
+                  onChange={(event) => {
+                    const checked = event.target.checked;
+
+                    setEditedPublicTeaser(checked);
+
+                    if (checked) {
+                      setEditedPublished(true);
+                    }
+                  }}
+                  disabled={
+                    (!thumbnailObjectKey && !thumbnailFile) ||
+                    pendingAction !== null
+                  }
+                  className="mt-0.5 h-5 w-5 accent-[#c8a66a]"
+                />
+
+                <span>
+                  <strong className="block text-sm font-medium text-[#d8d9dc]">
+                    Public archive teaser thumbnail
+                  </strong>
+
+                  <small className="mt-1 block text-xs leading-5 text-[#747b84]">
+                    Intentionally show only this thumbnail on
+                    the public case archive card. The
+                    recording access level does not change.
                   </small>
                 </span>
               </label>

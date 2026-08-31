@@ -89,6 +89,7 @@ export default async function AdminCasePage({
         access_level,
         is_published,
         is_featured,
+        is_public_teaser,
         sort_order,
         created_at
       `,
@@ -395,6 +396,9 @@ export default async function AdminCasePage({
                   }
                   isFeatured={
                     recording.is_featured
+                  }
+                  isPublicTeaser={
+                    recording.is_public_teaser
                   }
                   sortOrder={
                     recording.sort_order

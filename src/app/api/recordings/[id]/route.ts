@@ -95,6 +95,21 @@ export async function PATCH(
 
     const isPublished = body.isPublished === true;
     const isFeatured = body.isFeatured === true;
+    const hasIsPublicTeaser =
+      Object.prototype.hasOwnProperty.call(
+        body,
+        "isPublicTeaser",
+      );
+
+    if (
+      hasIsPublicTeaser &&
+      typeof body.isPublicTeaser !== "boolean"
+    ) {
+      return NextResponse.json(
+        { error: "Please select a valid teaser setting." },
+        { status: 400 },
+      );
+    }
 
     const sortOrder =
       typeof body.sortOrder === "number" &&
@@ -182,6 +197,7 @@ export async function PATCH(
             mime_type,
             published_at,
             is_featured,
+            is_public_teaser,
             file_summary,
             thumbnail_object_key,
             duration_seconds
@@ -227,6 +243,47 @@ export async function PATCH(
       );
     }
 
+    const nextThumbnailObjectKey = hasThumbnailObjectKey
+      ? thumbnailObjectKey || null
+      : currentRecording.thumbnail_object_key;
+
+    const requestedPublicTeaser = hasIsPublicTeaser
+      ? body.isPublicTeaser === true
+      : currentRecording.is_public_teaser;
+
+    if (
+      hasIsPublicTeaser &&
+      requestedPublicTeaser &&
+      !isPublished
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "A public archive teaser must also be published.",
+        },
+        { status: 400 },
+      );
+    }
+
+    if (
+      hasIsPublicTeaser &&
+      requestedPublicTeaser &&
+      !nextThumbnailObjectKey
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "A public archive teaser requires a thumbnail image.",
+        },
+        { status: 400 },
+      );
+    }
+
+    const isPublicTeaser =
+      requestedPublicTeaser &&
+      isPublished &&
+      Boolean(nextThumbnailObjectKey);
+
     const publishedAt = isPublished
       ? currentRecording.published_at ??
         new Date().toISOString()
@@ -255,6 +312,29 @@ export async function PATCH(
       }
     }
 
+    if (isPublicTeaser) {
+      const { error: clearTeaserError } = await supabase
+        .from("recordings")
+        .update({
+          is_public_teaser: false,
+          updated_by: user.id,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("case_id", currentRecording.case_id)
+        .neq("id", id)
+        .eq("is_public_teaser", true);
+
+      if (clearTeaserError) {
+        return NextResponse.json(
+          {
+            error:
+              "The existing public archive teaser could not be replaced.",
+          },
+          { status: 500 },
+        );
+      }
+    }
+
     const { error: updateError } = await supabase
       .from("recordings")
       .update({
@@ -265,9 +345,7 @@ export async function PATCH(
           ? fileSummary || null
           : currentRecording.file_summary,
 
-        thumbnail_object_key: hasThumbnailObjectKey
-          ? thumbnailObjectKey || null
-          : currentRecording.thumbnail_object_key,
+        thumbnail_object_key: nextThumbnailObjectKey,
 
         duration_seconds: hasDurationSeconds
           ? durationSeconds
@@ -276,6 +354,7 @@ export async function PATCH(
         access_level: accessLevel,
         is_published: isPublished,
         is_featured: isFeatured,
+        is_public_teaser: isPublicTeaser,
         published_at: publishedAt,
         sort_order: sortOrder,
         updated_by: user.id,
@@ -284,6 +363,19 @@ export async function PATCH(
       .eq("id", id);
 
     if (updateError) {
+      if (
+        updateError.code === "23505" ||
+        updateError.code === "23514"
+      ) {
+        return NextResponse.json(
+          {
+            error:
+              "The public archive teaser setting conflicts with another recording or is no longer valid.",
+          },
+          { status: 409 },
+        );
+      }
+
       return NextResponse.json(
         { error: updateError.message },
         { status: 500 },

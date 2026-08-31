@@ -7,6 +7,7 @@ import {
   getSignedUrl,
 } from "@aws-sdk/s3-request-presigner";
 import { createClient } from "@/lib/supabase/server";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 import {
   r2BucketName,
   r2Client,
@@ -317,19 +318,19 @@ export default async function CasesArchivePage({
         caseItem.id,
     );
 
-  let recordingCounts =
+  const recordingCounts =
     new Map<
       string,
       number
     >();
 
-  let imageCounts =
+  const imageCounts =
     new Map<
       string,
       number
     >();
 
-  let documentCounts =
+  const documentCounts =
     new Map<
       string,
       number
@@ -346,24 +347,65 @@ export default async function CasesArchivePage({
 
   if (caseIds.length > 0) {
     /*
-     * RECORDINGS
+     * PUBLIC ARCHIVE COUNTS
      *
-     * Includes audio and video.
-     *
-     * Recordings are ordered so
-     * the first available thumbnail
-     * can automatically become the
-     * case archive thumbnail.
+     * The RPC returns aggregate-only
+     * published inventory totals. It
+     * intentionally includes public
+     * and member material without
+     * exposing the underlying rows.
      */
     const {
-      data: recordings,
-      error: recordingsError,
+      data: archiveCounts,
+      error: archiveCountsError,
+    } = await supabase.rpc(
+      "get_published_case_archive_counts",
+    );
+
+    if (archiveCountsError) {
+      throw new Error(
+        `Unable to load archive totals: ${archiveCountsError.message}`,
+      );
+    }
+
+    for (
+      const archiveCount of
+        archiveCounts ?? []
+    ) {
+      if (!caseIds.includes(archiveCount.case_id)) {
+        continue;
+      }
+
+      recordingCounts.set(
+        archiveCount.case_id,
+        Number(archiveCount.recording_count),
+      );
+      imageCounts.set(
+        archiveCount.case_id,
+        Number(archiveCount.image_count),
+      );
+      documentCounts.set(
+        archiveCount.case_id,
+        Number(archiveCount.document_count),
+      );
+    }
+
+    /*
+     * PUBLIC RECORDING METADATA
+     *
+     * This query is explicitly limited
+     * to public recordings and supplies
+     * only the card badge and fallback
+     * thumbnail data needed for display.
+     */
+    const {
+      data: publicRecordings,
+      error: publicRecordingsError,
     } = await supabase
       .from("recordings")
       .select(
         `
           case_id,
-          access_level,
           is_featured,
           mime_type,
           thumbnail_object_key,
@@ -371,83 +413,33 @@ export default async function CasesArchivePage({
           created_at
         `,
       )
-      .in(
-        "case_id",
-        caseIds,
-      )
-      .eq(
-        "is_published",
-        true,
-      )
-      .order(
-        "sort_order",
-        {
-          ascending: true,
-        },
-      )
-      .order(
-        "created_at",
-        {
-          ascending: true,
-        },
-      );
+      .in("case_id", caseIds)
+      .eq("is_published", true)
+      .eq("access_level", "public")
+      .order("sort_order", { ascending: true })
+      .order("created_at", { ascending: true });
 
-    if (recordingsError) {
+    if (publicRecordingsError) {
       throw new Error(
-        `Unable to load recording totals: ${recordingsError.message}`,
+        `Unable to load public recording metadata: ${publicRecordingsError.message}`,
       );
     }
 
-    recordingCounts =
-      new Map<
-        string,
-        number
-      >();
+    const thumbnailObjectKeys = new Map<string, string>();
 
-    const firstThumbnailObjectKey =
-      new Map<
-        string,
-        string
-      >();
-
-    for (
-      const recording of
-        recordings ?? []
-    ) {
-      const currentCount =
-        recordingCounts.get(
-          recording.case_id,
-        ) ?? 0;
-
-      recordingCounts.set(
-        recording.case_id,
-        currentCount + 1,
-      );
-
+    for (const recording of publicRecordings ?? []) {
       if (
         recording.is_featured &&
-        recording.mime_type?.startsWith(
-          "video/",
-        )
+        recording.mime_type?.startsWith("video/")
       ) {
-        featuredVideoCases.add(
-          recording.case_id,
-        );
+        featuredVideoCases.add(recording.case_id);
       }
 
-      /*
-       * Keep only the first available
-       * recording thumbnail for each
-       * case.
-       */
       if (
-        recording.access_level === "public" &&
         recording.thumbnail_object_key &&
-        !firstThumbnailObjectKey.has(
-          recording.case_id,
-        )
+        !thumbnailObjectKeys.has(recording.case_id)
       ) {
-        firstThumbnailObjectKey.set(
+        thumbnailObjectKeys.set(
           recording.case_id,
           recording.thumbnail_object_key,
         );
@@ -455,118 +447,41 @@ export default async function CasesArchivePage({
     }
 
     /*
-     * Create secure R2 URLs in
-     * parallel after identifying
-     * only the thumbnails we need.
-     */
-    caseThumbnailUrls =
-      await createCaseThumbnailUrls(
-        firstThumbnailObjectKey,
-      );
-
-    /*
-     * CASE IMAGES
+     * EXPLICIT PUBLIC TEASERS
      *
-     * Includes published
-     * crime-scene photographs,
-     * evidence images,
-     * screenshots, etc.
+     * The server-only client reads only
+     * the designated thumbnail key and
+     * case id. No recording media key or
+     * other protected metadata is read.
      */
     const {
-      data: imageTotals,
-      error: imagesError,
-    } =
-      await supabase.rpc(
-        "get_case_image_counts",
-      );
+      data: publicTeasers,
+      error: publicTeasersError,
+    } = await supabaseAdmin
+      .from("recordings")
+      .select("case_id, thumbnail_object_key")
+      .in("case_id", caseIds)
+      .eq("is_published", true)
+      .eq("is_public_teaser", true);
 
-    if (imagesError) {
+    if (publicTeasersError) {
       throw new Error(
-        `Unable to load image totals: ${imagesError.message}`,
+        `Unable to load public teaser thumbnails: ${publicTeasersError.message}`,
       );
     }
 
-    imageCounts =
-      new Map<
-        string,
-        number
-      >();
-
-    for (
-      const imageTotal of
-        imageTotals ?? []
-    ) {
-      /*
-       * Only keep counts relevant
-       * to cases currently visible
-       * in the archive/search.
-       */
-      if (
-        caseIds.includes(
-          imageTotal.case_id,
-        )
-      ) {
-        imageCounts.set(
-          imageTotal.case_id,
-          Number(
-            imageTotal.image_count,
-          ),
+    for (const teaser of publicTeasers ?? []) {
+      if (teaser.thumbnail_object_key) {
+        thumbnailObjectKeys.set(
+          teaser.case_id,
+          teaser.thumbnail_object_key,
         );
       }
     }
 
-    /*
-     * DOCUMENTS
-     *
-     * Includes PDFs,
-     * presentations,
-     * reports, exhibits,
-     * and other published
-     * case documents.
-     */
-    const {
-      data: documents,
-      error: documentsError,
-    } = await supabase
-      .from(
-        "case_documents",
-      )
-      .select("case_id")
-      .in(
-        "case_id",
-        caseIds,
-      )
-      .eq(
-        "is_published",
-        true,
-      );
-
-    if (documentsError) {
-      throw new Error(
-        `Unable to load document totals: ${documentsError.message}`,
-      );
-    }
-
-    documentCounts =
-      new Map<
-        string,
-        number
-      >();
-
-    for (
-      const document of
-        documents ?? []
-    ) {
-      const currentCount =
-        documentCounts.get(
-          document.case_id,
-        ) ?? 0;
-
-      documentCounts.set(
-        document.case_id,
-        currentCount + 1,
-      );
-    }
+    caseThumbnailUrls = await createCaseThumbnailUrls(
+      thumbnailObjectKeys,
+    );
   }
 
   /*
