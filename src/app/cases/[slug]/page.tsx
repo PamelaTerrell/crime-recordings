@@ -88,7 +88,10 @@ async function getPublishedCase(slug: string) {
 
   const recordingsWithThumbnails = await Promise.all(
     (recordings ?? []).map(async (recording) => {
-      if (!recording.thumbnail_object_key) {
+      if (
+        recording.access_level !== "public" ||
+        !recording.thumbnail_object_key
+      ) {
         return {
           ...recording,
           thumbnail_url: null,

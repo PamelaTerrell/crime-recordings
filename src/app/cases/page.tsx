@@ -363,6 +363,7 @@ export default async function CasesArchivePage({
       .select(
         `
           case_id,
+          access_level,
           is_featured,
           mime_type,
           thumbnail_object_key,
@@ -440,6 +441,7 @@ export default async function CasesArchivePage({
        * case.
        */
       if (
+        recording.access_level === "public" &&
         recording.thumbnail_object_key &&
         !firstThumbnailObjectKey.has(
           recording.case_id,

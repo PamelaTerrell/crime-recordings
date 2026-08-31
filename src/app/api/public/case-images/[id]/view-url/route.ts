@@ -10,6 +10,12 @@ const MEMBER_ACCESS_STATUSES = new Set([
   "active",
 ]);
 
+const PUBLIC_URL_TTL_SECONDS = 60 * 60;
+const MEMBER_URL_TTL_SECONDS = 10 * 60;
+const PRIVATE_NO_STORE_HEADERS = {
+  "Cache-Control": "private, no-store",
+};
+
 function subscriptionHasAccess(
   status: string,
   currentPeriodEnd: string | null,
@@ -123,7 +129,10 @@ export async function POST(
               "Please sign in to access this members-only image.",
             requiresSignIn: true,
           },
-          { status: 401 },
+          {
+            status: 401,
+            headers: PRIVATE_NO_STORE_HEADERS,
+          },
         );
       }
 
@@ -158,7 +167,10 @@ export async function POST(
             error:
               "Your membership status could not be verified.",
           },
-          { status: 500 },
+          {
+            status: 500,
+            headers: PRIVATE_NO_STORE_HEADERS,
+          },
         );
       }
 
@@ -176,7 +188,10 @@ export async function POST(
               "An active membership is required to access this image.",
             requiresMembership: true,
           },
-          { status: 403 },
+          {
+            status: 403,
+            headers: PRIVATE_NO_STORE_HEADERS,
+          },
         );
       }
     } else if (image.access_level !== "public") {
@@ -205,20 +220,36 @@ export async function POST(
       ResponseContentType:
         image.mime_type ?? "application/octet-stream",
       ResponseContentDisposition: "inline",
+      ResponseCacheControl:
+        image.access_level === "member"
+          ? "private, no-store"
+          : undefined,
     });
+
+    const expiresInSeconds =
+      image.access_level === "member"
+        ? MEMBER_URL_TTL_SECONDS
+        : PUBLIC_URL_TTL_SECONDS;
 
     const viewUrl = await getSignedUrl(
       r2Client,
       command,
       {
-        expiresIn: 60 * 60,
+        expiresIn: expiresInSeconds,
       },
     );
 
-    return NextResponse.json({
-      viewUrl,
-      expiresInSeconds: 3600,
-    });
+    return NextResponse.json(
+      {
+        viewUrl,
+        expiresInSeconds,
+      },
+      image.access_level === "member"
+        ? {
+            headers: PRIVATE_NO_STORE_HEADERS,
+          }
+        : undefined,
+    );
   } catch (error) {
     console.error(
       "Unable to create case image URL:",

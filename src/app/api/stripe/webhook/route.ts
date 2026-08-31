@@ -16,6 +16,19 @@ const SUPPORTED_STATUSES = new Set([
   "paused",
 ]);
 
+type CheckoutAttemptStatus =
+  | "creating"
+  | "open"
+  | "completed"
+  | "expired";
+
+type CheckoutAttempt = {
+  id: string;
+  user_id: string;
+  stripe_checkout_session_id: string | null;
+  status: CheckoutAttemptStatus;
+};
+
 function unixTimestampToIso(
   timestamp: number | null | undefined,
 ) {
@@ -105,6 +118,148 @@ async function syncSubscription(
   }
 }
 
+async function loadCheckoutAttempt(
+  attemptId: string,
+  userId: string,
+) {
+  const { data, error } = await supabaseAdmin
+    .from("checkout_attempts")
+    .select(
+      "id,user_id,stripe_checkout_session_id,status",
+    )
+    .eq("id", attemptId)
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(
+      "Unable to load the checkout attempt.",
+      { cause: error },
+    );
+  }
+
+  return data as CheckoutAttempt | null;
+}
+
+async function reconcileCheckoutAttempt(
+  session: Stripe.Checkout.Session,
+  targetStatus: "completed" | "expired",
+) {
+  const attemptId =
+    session.metadata?.checkout_attempt_id?.trim();
+  const userId = session.metadata?.user_id?.trim();
+
+  if (!attemptId || !userId) {
+    return;
+  }
+
+  const attempt = await loadCheckoutAttempt(
+    attemptId,
+    userId,
+  );
+
+  if (!attempt) {
+    return;
+  }
+
+  if (
+    (targetStatus === "completed" &&
+      session.status !== "complete") ||
+    (targetStatus === "expired" &&
+      session.status !== "expired")
+  ) {
+    throw new Error(
+      "Checkout Session state does not match its event.",
+    );
+  }
+
+  if (
+    attempt.stripe_checkout_session_id &&
+    attempt.stripe_checkout_session_id !== session.id
+  ) {
+    return;
+  }
+
+  if (
+    !attempt.stripe_checkout_session_id &&
+    session.client_reference_id !== userId
+  ) {
+    return;
+  }
+
+  if (targetStatus === "expired") {
+    if (
+      attempt.status === "completed" ||
+      attempt.status === "expired"
+    ) {
+      return;
+    }
+
+    if (
+      attempt.status !== "creating" &&
+      attempt.status !== "open"
+    ) {
+      return;
+    }
+  } else if (attempt.status === "completed") {
+    return;
+  }
+
+  let updateQuery = supabaseAdmin
+    .from("checkout_attempts")
+    .update({
+      stripe_checkout_session_id: session.id,
+      status: targetStatus,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", attempt.id)
+    .eq("user_id", attempt.user_id)
+    .eq("status", attempt.status);
+
+  updateQuery = attempt.stripe_checkout_session_id
+    ? updateQuery.eq(
+        "stripe_checkout_session_id",
+        session.id,
+      )
+    : updateQuery.is("stripe_checkout_session_id", null);
+
+  const { data, error } = await updateQuery
+    .select("id")
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(
+      "Unable to reconcile the checkout attempt.",
+      { cause: error },
+    );
+  }
+
+  if (data) {
+    return;
+  }
+
+  const currentAttempt = await loadCheckoutAttempt(
+    attemptId,
+    userId,
+  );
+
+  const sessionMatches =
+    currentAttempt?.stripe_checkout_session_id === session.id;
+
+  if (
+    sessionMatches &&
+    (currentAttempt.status === targetStatus ||
+      (targetStatus === "expired" &&
+        currentAttempt.status === "completed"))
+  ) {
+    return;
+  }
+
+  throw new Error(
+    "Checkout attempt changed during reconciliation.",
+  );
+}
+
 export async function POST(request: Request) {
   const webhookSecret =
     process.env.STRIPE_WEBHOOK_SECRET;
@@ -185,6 +340,23 @@ export async function POST(request: Request) {
           session.client_reference_id ??
             session.metadata?.user_id ??
             null,
+        );
+
+        await reconcileCheckoutAttempt(
+          session,
+          "completed",
+        );
+
+        break;
+      }
+
+      case "checkout.session.expired": {
+        const session =
+          event.data.object as Stripe.Checkout.Session;
+
+        await reconcileCheckoutAttempt(
+          session,
+          "expired",
         );
 
         break;

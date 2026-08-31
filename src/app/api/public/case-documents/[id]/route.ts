@@ -23,6 +23,7 @@ export async function GET(
       .select(
         `
           id,
+          case_id,
           title,
           object_key,
           original_filename,
@@ -48,6 +49,49 @@ export async function GET(
     }
 
     if (!document) {
+      return NextResponse.json(
+        {
+          error: "The document could not be found.",
+        },
+        {
+          status: 404,
+        },
+      );
+    }
+
+    if (!document.case_id) {
+      return NextResponse.json(
+        {
+          error: "The document could not be found.",
+        },
+        {
+          status: 404,
+        },
+      );
+    }
+
+    const { data: caseRecord, error: caseError } =
+      await supabase
+        .from("cases")
+        .select("id, case_status")
+        .eq("id", document.case_id)
+        .maybeSingle();
+
+    if (caseError) {
+      return NextResponse.json(
+        {
+          error: `Unable to verify document case: ${caseError.message}`,
+        },
+        {
+          status: 500,
+        },
+      );
+    }
+
+    if (
+      !caseRecord ||
+      caseRecord.case_status !== "published"
+    ) {
       return NextResponse.json(
         {
           error: "The document could not be found.",
