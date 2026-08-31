@@ -2,6 +2,8 @@
 
 import {
   ChangeEvent,
+  useEffect,
+  useRef,
   useState,
 } from "react";
 import { useRouter } from "next/navigation";
@@ -13,7 +15,7 @@ type RecordingPlayerProps = {
   recordingType: string;
   fileSummary: string | null;
   durationSeconds: number | null;
-  thumbnailObjectKey: string | null;
+  hasThumbnail: boolean;
   originalFilename: string | null;
   mimeType: string | null;
   fileSizeBytes: number | null;
@@ -173,7 +175,7 @@ export default function RecordingPlayer({
   recordingType,
   fileSummary,
   durationSeconds,
-  thumbnailObjectKey,
+  hasThumbnail,
   originalFilename,
   mimeType,
   fileSizeBytes,
@@ -219,6 +221,11 @@ export default function RecordingPlayer({
 
   const [thumbnailFile, setThumbnailFile] =
     useState<File | null>(null);
+  const [thumbnailPreviewUrl, setThumbnailPreviewUrl] =
+    useState("");
+  const thumbnailPreviewUrlRef = useRef<string | null>(
+    null,
+  );
 
   const [confirmationText, setConfirmationText] =
     useState("");
@@ -240,6 +247,29 @@ export default function RecordingPlayer({
   const isVideo =
     mimeType?.startsWith("video/") ?? false;
 
+  useEffect(() => {
+    return () => {
+      if (thumbnailPreviewUrlRef.current) {
+        URL.revokeObjectURL(
+          thumbnailPreviewUrlRef.current,
+        );
+      }
+    };
+  }, []);
+
+  function updateThumbnailPreview(file: File | null) {
+    if (thumbnailPreviewUrlRef.current) {
+      URL.revokeObjectURL(thumbnailPreviewUrlRef.current);
+    }
+
+    const nextPreviewUrl = file
+      ? URL.createObjectURL(file)
+      : null;
+
+    thumbnailPreviewUrlRef.current = nextPreviewUrl;
+    setThumbnailPreviewUrl(nextPreviewUrl ?? "");
+  }
+
   function handleThumbnailChange(
     event: ChangeEvent<HTMLInputElement>,
   ) {
@@ -251,11 +281,13 @@ export default function RecordingPlayer({
 
     if (!selectedFile) {
       setThumbnailFile(null);
+      updateThumbnailPreview(null);
       return;
     }
 
     if (!allowedThumbnailTypes.has(selectedFile.type)) {
       setThumbnailFile(null);
+      updateThumbnailPreview(null);
       event.target.value = "";
 
       setError(
@@ -267,6 +299,7 @@ export default function RecordingPlayer({
 
     if (selectedFile.size > MAX_THUMBNAIL_BYTES) {
       setThumbnailFile(null);
+      updateThumbnailPreview(null);
       event.target.value = "";
 
       setError(
@@ -277,6 +310,7 @@ export default function RecordingPlayer({
     }
 
     setThumbnailFile(selectedFile);
+    updateThumbnailPreview(selectedFile);
   }
 
   async function preparePlayback() {
@@ -321,7 +355,7 @@ export default function RecordingPlayer({
 
   async function uploadThumbnail() {
     if (!thumbnailFile) {
-      return thumbnailObjectKey;
+      return null;
     }
 
     const uploadUrlResponse = await fetch(
@@ -414,8 +448,12 @@ export default function RecordingPlayer({
             recordingType: editedType,
             fileSummary: editedSummary.trim(),
             durationSeconds: parsedDuration,
-            thumbnailObjectKey:
-              savedThumbnailObjectKey ?? "",
+            ...(savedThumbnailObjectKey
+              ? {
+                  thumbnailObjectKey:
+                    savedThumbnailObjectKey,
+                }
+              : {}),
             accessLevel: editedAccess,
             isPublished: editedPublished,
             isFeatured: editedFeatured,
@@ -435,6 +473,7 @@ export default function RecordingPlayer({
       }
 
       setThumbnailFile(null);
+      updateThumbnailPreview(null);
       setMessage("Recording updated.");
       setShowEditForm(false);
 
@@ -509,7 +548,7 @@ export default function RecordingPlayer({
               </span>
             ) : null}
 
-            {thumbnailObjectKey ? (
+            {hasThumbnail ? (
               <span className="border border-emerald-400/30 bg-emerald-400/10 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.12em] text-emerald-200">
                 Thumbnail attached
               </span>
@@ -790,7 +829,7 @@ export default function RecordingPlayer({
                   Selected: {thumbnailFile.name} ·{" "}
                   {formatFileSize(thumbnailFile.size)}
                 </span>
-              ) : thumbnailObjectKey ? (
+              ) : hasThumbnail ? (
                 <span className="text-sm text-emerald-200">
                   A thumbnail image is already attached.
                   Selecting another image will replace it.
@@ -801,6 +840,53 @@ export default function RecordingPlayer({
                   beside this recording.
                 </span>
               )}
+
+              {hasThumbnail ? (
+                <div className="grid gap-3 border-t border-white/10 pt-4">
+                  <div>
+                    <strong className="block text-xs font-extrabold uppercase tracking-[0.12em] text-[#d8d9dc]">
+                      Current thumbnail
+                    </strong>
+
+                    {isPublicTeaser ? (
+                      <span className="mt-1 block text-xs leading-5 text-[#e1c58f]">
+                        This is currently used as the public
+                        archive teaser.
+                      </span>
+                    ) : null}
+                  </div>
+
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={`/api/recordings/${recordingId}/thumbnail`}
+                    alt={`Current thumbnail for ${title}`}
+                    className="h-auto w-full max-w-[380px] border border-white/10 bg-black object-contain"
+                  />
+                </div>
+              ) : null}
+
+              {thumbnailPreviewUrl ? (
+                <div className="grid gap-3 border-t border-white/10 pt-4">
+                  <div>
+                    <strong className="block text-xs font-extrabold uppercase tracking-[0.12em] text-[#e1c58f]">
+                      New thumbnail preview
+                    </strong>
+
+                    <span className="mt-1 block text-xs leading-5 text-[#a8adb5]">
+                      This image will replace the current
+                      thumbnail and will appear on /cases if
+                      public archive teaser is enabled.
+                    </span>
+                  </div>
+
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={thumbnailPreviewUrl}
+                    alt={`New thumbnail preview for ${title}`}
+                    className="h-auto w-full max-w-[380px] border border-[#c8a66a]/50 bg-black object-contain"
+                  />
+                </div>
+              ) : null}
             </label>
 
             <div className="grid gap-4 self-end pb-3 md:col-span-2">
@@ -837,7 +923,7 @@ export default function RecordingPlayer({
 
               <label
                 className={`flex items-start gap-3 ${
-                  !thumbnailObjectKey && !thumbnailFile
+                  !hasThumbnail && !thumbnailFile
                     ? "cursor-not-allowed opacity-50"
                     : ""
                 }`}
@@ -855,7 +941,7 @@ export default function RecordingPlayer({
                     }
                   }}
                   disabled={
-                    (!thumbnailObjectKey && !thumbnailFile) ||
+                    (!hasThumbnail && !thumbnailFile) ||
                     pendingAction !== null
                   }
                   className="mt-0.5 h-5 w-5 accent-[#c8a66a]"

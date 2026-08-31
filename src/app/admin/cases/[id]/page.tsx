@@ -376,9 +376,9 @@ export default async function AdminCasePage({
                   durationSeconds={
                     recording.duration_seconds
                   }
-                  thumbnailObjectKey={
-                    recording.thumbnail_object_key
-                  }
+                  hasThumbnail={Boolean(
+                    recording.thumbnail_object_key,
+                  )}
                   originalFilename={
                     recording.original_filename
                   }
