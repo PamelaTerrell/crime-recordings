@@ -36,23 +36,26 @@ export default async function AdminPage() {
             publish the cases in the Crime Recordings
             archive.
           </p>
-        <div className="admin-page-actions">
-  <Link
-    href="/admin/requests"
-    className="admin-secondary-link"
-  >
-    Records requests
-    <span aria-hidden="true">→</span>
-  </Link>
+        </div>
 
-  <Link
-    href="/admin/cases/new"
-    className="admin-primary-link"
-  >
-    Create a new case
-    <span aria-hidden="true">→</span>
-  </Link>
-</div>
+        <div className="admin-page-actions">
+          <Link
+            href="/admin/requests"
+            className="admin-secondary-link"
+          >
+            Records requests
+            <span aria-hidden="true">→</span>
+          </Link>
+
+          <Link
+            href="/admin/cases/new"
+            className="admin-primary-link"
+          >
+            Create a new case
+            <span aria-hidden="true">→</span>
+          </Link>
+        </div>
+      </div>
 
       {error ? (
         <div
@@ -90,9 +93,7 @@ export default async function AdminPage() {
                 ) : null}
 
                 <time
-                  dateTime={
-                    caseItem.updated_at
-                  }
+                  dateTime={caseItem.updated_at}
                 >
                   Updated{" "}
                   {new Intl.DateTimeFormat(
