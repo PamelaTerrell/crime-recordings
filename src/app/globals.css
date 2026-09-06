@@ -1357,6 +1357,11 @@ background 180ms ease,
   line-height: 1.5;
 }
 
+.admin-request-form-actions {
+  align-items: center;
+  gap: 12px;
+}
+
 .admin-form-actions {
   display: flex;
   justify-content: flex-end;

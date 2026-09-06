@@ -42,6 +42,15 @@ export default function NewRequestPage() {
       );
     }
 
+    if (
+      status !== "open" &&
+      status !== "closed"
+    ) {
+      throw new Error(
+        "Invalid request status.",
+      );
+    }
+
     const { error } = await supabase
       .from("public_records_requests")
       .insert({
@@ -62,6 +71,13 @@ export default function NewRequestPage() {
 
   return (
     <section>
+      <Link
+        href="/admin/requests"
+        className="admin-back-link"
+      >
+        ← Back to records requests
+      </Link>
+
       <div className="admin-page-heading">
         <div>
           <p className="admin-eyebrow">
@@ -70,125 +86,174 @@ export default function NewRequestPage() {
 
           <h1>Add a request</h1>
 
-          <p>
-            Record a newly submitted public
-            records request.
+          <p className="admin-page-description">
+            Record a newly submitted public records
+            request so you can quickly see what is
+            still open and avoid submitting duplicate
+            requests.
           </p>
         </div>
-
-        <Link
-          href="/admin/requests"
-          className="admin-secondary-link"
-        >
-          Back to requests
-        </Link>
       </div>
 
       <form
         action={createRequest}
         className="admin-form"
       >
-        <div className="admin-form-field">
-          <label htmlFor="submitted_at">
-            Date submitted
-          </label>
+        <section className="admin-form-section">
+          <div className="admin-form-section-heading">
+            <span>01</span>
 
-          <input
-            id="submitted_at"
-            name="submitted_at"
-            type="date"
-            required
-          />
-        </div>
+            <div>
+              <h2>Request details</h2>
 
-        <div className="admin-form-field">
-          <label htmlFor="subject_name">
-            Name of accused / criminal
-          </label>
+              <p>
+                Add the basic information needed to
+                identify and track this request.
+              </p>
+            </div>
+          </div>
 
-          <input
-            id="subject_name"
-            name="subject_name"
-            type="text"
-            placeholder="Devon Arthurs"
-            required
-          />
-        </div>
+          <div className="admin-form-grid">
+            <div className="admin-field">
+              <label htmlFor="submitted_at">
+                Date submitted
+              </label>
 
-        <div className="admin-form-field">
-          <label htmlFor="state">
-            State
-          </label>
+              <input
+                id="submitted_at"
+                name="submitted_at"
+                type="date"
+                required
+              />
+            </div>
 
-          <input
-            id="state"
-            name="state"
-            type="text"
-            placeholder="FL"
-            maxLength={2}
-          />
-        </div>
+            <div className="admin-field">
+              <label htmlFor="status">
+                Status
+              </label>
 
-        <div className="admin-form-field">
-          <label htmlFor="portal_url">
-            Portal link
-          </label>
+              <select
+                id="status"
+                name="status"
+                defaultValue="open"
+              >
+                <option value="open">
+                  Open
+                </option>
 
-          <input
-            id="portal_url"
-            name="portal_url"
-            type="url"
-            placeholder="https://..."
-          />
-        </div>
+                <option value="closed">
+                  Closed
+                </option>
+              </select>
+            </div>
 
-        <div className="admin-form-field">
-          <label htmlFor="status">
-            Status
-          </label>
+            <div className="admin-field admin-field-full">
+              <label htmlFor="subject_name">
+                Name of accused / criminal
+              </label>
 
-          <select
-            id="status"
-            name="status"
-            defaultValue="open"
-          >
-            <option value="open">
-              Open
-            </option>
+              <input
+                id="subject_name"
+                name="subject_name"
+                type="text"
+                placeholder="Devon Arthurs"
+                autoComplete="off"
+                required
+              />
+            </div>
 
-            <option value="closed">
-              Closed
-            </option>
-          </select>
-        </div>
+            <div className="admin-field">
+              <label htmlFor="state">
+                State
+              </label>
 
-        <div className="admin-form-field">
-          <label htmlFor="notes">
-            Notes
-          </label>
+              <input
+                id="state"
+                name="state"
+                type="text"
+                placeholder="FL"
+                maxLength={2}
+                autoCapitalize="characters"
+                autoComplete="off"
+              />
 
-          <textarea
-            id="notes"
-            name="notes"
-            rows={5}
-            placeholder="Requested photos, bodycam, interrogation footage, etc."
-          />
-        </div>
+              <small>
+                Use the two-letter state
+                abbreviation.
+              </small>
+            </div>
 
-        <div className="admin-form-actions">
-          <button
-            type="submit"
-            className="admin-primary-button"
-          >
-            Save request
-          </button>
+            <div className="admin-field">
+              <label htmlFor="portal_url">
+                Portal link
+              </label>
 
+              <input
+                id="portal_url"
+                name="portal_url"
+                type="url"
+                placeholder="https://..."
+              />
+
+              <small>
+                Link to the agency or public records
+                portal used for this request.
+              </small>
+            </div>
+          </div>
+        </section>
+
+        <section className="admin-form-section">
+          <div className="admin-form-section-heading">
+            <span>02</span>
+
+            <div>
+              <h2>Notes</h2>
+
+              <p>
+                Keep a short reminder of what you
+                requested or anything important about
+                the response.
+              </p>
+            </div>
+          </div>
+
+          <div className="admin-form-grid">
+            <div className="admin-field admin-field-full">
+              <label htmlFor="notes">
+                Request notes
+              </label>
+
+              <textarea
+                id="notes"
+                name="notes"
+                rows={6}
+                placeholder="Example: Requested crime-scene photos, evidence photos, interrogation video, bodycam, and surveillance footage."
+              />
+
+              <small>
+                This is for your internal tracking
+                only.
+              </small>
+            </div>
+          </div>
+        </section>
+
+        <div className="admin-form-actions admin-request-form-actions">
           <Link
             href="/admin/requests"
             className="admin-secondary-link"
           >
             Cancel
           </Link>
+
+          <button
+            type="submit"
+            className="admin-submit"
+          >
+            Save request
+            <span aria-hidden="true">→</span>
+          </button>
         </div>
       </form>
     </section>
