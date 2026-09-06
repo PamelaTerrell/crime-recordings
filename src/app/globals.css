@@ -835,6 +835,45 @@ background 180ms ease,
   line-height: 1.7;
 }
 
+/* ADMIN PAGE ACTIONS */
+
+.admin-page-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.admin-secondary-link {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 0 17px;
+  border: 1px solid var(--admin-border-strong);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.025);
+  color: #d8d8dc;
+  font-size: 0.72rem;
+  font-weight: 780;
+  letter-spacing: 0.03em;
+  text-decoration: none;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease,
+    color 160ms ease;
+}
+
+.admin-secondary-link:hover {
+  transform: translateY(-1px);
+  border-color: rgba(255, 255, 255, 0.24);
+  background: rgba(255, 255, 255, 0.06);
+  color: #ffffff;
+}
+
 .admin-back-link {
   display: inline-flex;
   margin-bottom: 18px;
@@ -1079,6 +1118,45 @@ background 180ms ease,
 
 .admin-case-status-draft {
   color: #aaaab0;
+}
+
+/* ADMIN PAGE ACTIONS */
+
+.admin-page-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.admin-secondary-link {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 0 17px;
+  border: 1px solid var(--admin-border-strong);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.025);
+  color: #d8d8dc;
+  font-size: 0.72rem;
+  font-weight: 780;
+  letter-spacing: 0.03em;
+  text-decoration: none;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease,
+    color 160ms ease;
+}
+
+.admin-secondary-link:hover {
+  transform: translateY(-1px);
+  border-color: rgba(255, 255, 255, 0.24);
+  background: rgba(255, 255, 255, 0.06);
+  color: #ffffff;
 }
 
 /* BUTTONS */
@@ -1637,6 +1715,28 @@ background 180ms ease,
     flex-direction: column;
     text-align: left;
   }
+
+  .admin-page-actions {
+  width: 100%;
+  align-items: stretch;
+  flex-direction: column;
+}
+
+.admin-page-actions {
+  width: 100%;
+  align-items: stretch;
+  flex-direction: column;
+}
+
+.admin-page-actions .admin-primary-link,
+.admin-page-actions .admin-secondary-link {
+  width: 100%;
+}
+
+.admin-page-actions .admin-primary-link,
+.admin-page-actions .admin-secondary-link {
+  width: 100%;
+}
 
   .admin-primary-link,
   .admin-submit {
