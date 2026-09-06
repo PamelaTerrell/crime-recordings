@@ -1,10 +1,22 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 
-export default async function RequestsPage() {
+type RequestsPageProps = {
+  searchParams: Promise<{
+    q?: string;
+  }>;
+};
+
+export default async function RequestsPage({
+  searchParams,
+}: RequestsPageProps) {
+  const { q } = await searchParams;
+
+  const searchTerm = q?.trim() ?? "";
+
   const supabase = await createClient();
 
-  const { data: requests, error } = await supabase
+  let query = supabase
     .from("public_records_requests")
     .select(
       `
@@ -20,6 +32,15 @@ export default async function RequestsPage() {
     .order("submitted_at", {
       ascending: false,
     });
+
+  if (searchTerm) {
+    query = query.ilike(
+      "subject_name",
+      `%${searchTerm}%`,
+    );
+  }
+
+  const { data: requests, error } = await query;
 
   const openRequests =
     requests?.filter(
@@ -41,10 +62,10 @@ export default async function RequestsPage() {
 
           <h1>Records requests</h1>
 
-          <p>
-            Keep track of public records requests
-            submitted for possible Crime Recordings
-            cases.
+          <p className="admin-page-description">
+            Track submitted public records requests
+            and quickly check whether a person has
+            already been requested.
           </p>
         </div>
 
@@ -57,15 +78,56 @@ export default async function RequestsPage() {
         </Link>
       </div>
 
-      <div className="admin-request-summary">
-        <div>
-          <strong>{openRequests}</strong>
-          <span>Open</span>
-        </div>
+      <div className="admin-request-toolbar">
+        <form
+          action="/admin/requests"
+          method="get"
+          className="admin-request-search"
+        >
+          <div className="admin-field">
+            <label htmlFor="q">
+              Search by name
+            </label>
 
-        <div>
-          <strong>{closedRequests}</strong>
-          <span>Closed</span>
+            <div className="admin-request-search-row">
+              <input
+                id="q"
+                name="q"
+                type="search"
+                defaultValue={searchTerm}
+                placeholder="Search accused / criminal..."
+                autoComplete="off"
+              />
+
+              <button
+                type="submit"
+                className="admin-button"
+              >
+                Search
+              </button>
+
+              {searchTerm ? (
+                <Link
+                  href="/admin/requests"
+                  className="admin-secondary-link"
+                >
+                  Clear
+                </Link>
+              ) : null}
+            </div>
+          </div>
+        </form>
+
+        <div className="admin-request-summary">
+          <div className="admin-card admin-request-stat">
+            <span>Open</span>
+            <strong>{openRequests}</strong>
+          </div>
+
+          <div className="admin-card admin-request-stat">
+            <span>Closed</span>
+            <strong>{closedRequests}</strong>
+          </div>
         </div>
       </div>
 
@@ -142,26 +204,38 @@ export default async function RequestsPage() {
       ) : (
         <div className="admin-empty-state">
           <p className="admin-eyebrow">
-            No requests yet
+            {searchTerm
+              ? "No matches"
+              : "No requests yet"}
           </p>
 
           <h2>
-            Start tracking your public records
-            requests.
+            {searchTerm
+              ? `No requests found for “${searchTerm}.”`
+              : "Start tracking your public records requests."}
           </h2>
 
           <p>
-            Add requests as you submit them so you
-            can quickly see which cases are still
-            open.
+            {searchTerm
+              ? "Try another spelling or clear the search to view all requests."
+              : "Add requests as you submit them so you can quickly see which ones are still open."}
           </p>
 
-          <Link
-            href="/admin/requests/new"
-            className="admin-primary-link"
-          >
-            Add the first request
-          </Link>
+          {searchTerm ? (
+            <Link
+              href="/admin/requests"
+              className="admin-secondary-link"
+            >
+              View all requests
+            </Link>
+          ) : (
+            <Link
+              href="/admin/requests/new"
+              className="admin-primary-link"
+            >
+              Add the first request
+            </Link>
+          )}
         </div>
       )}
     </section>
