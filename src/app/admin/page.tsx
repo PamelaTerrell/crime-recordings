@@ -36,16 +36,23 @@ export default async function AdminPage() {
             publish the cases in the Crime Recordings
             archive.
           </p>
-        </div>
+        <div className="admin-page-actions">
+  <Link
+    href="/admin/requests"
+    className="admin-secondary-link"
+  >
+    Records requests
+    <span aria-hidden="true">→</span>
+  </Link>
 
-        <Link
-          href="/admin/cases/new"
-          className="admin-primary-link"
-        >
-          Create a new case
-          <span aria-hidden="true">→</span>
-        </Link>
-      </div>
+  <Link
+    href="/admin/cases/new"
+    className="admin-primary-link"
+  >
+    Create a new case
+    <span aria-hidden="true">→</span>
+  </Link>
+</div>
 
       {error ? (
         <div
