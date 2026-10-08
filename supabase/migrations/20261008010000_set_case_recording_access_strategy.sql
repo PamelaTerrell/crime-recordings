@@ -26,8 +26,11 @@ begin
     raise exception 'Invalid case access strategy.';
   end if;
 
-  -- Serialize strategy changes across all cases.
-  -- Lock rows in a deterministic order before updating permissions.
+  -- Serialize strategy switching with recording-access changes.
+  -- The recording-access trigger uses this same transaction lock.
+  perform pg_catalog.pg_advisory_xact_lock(20261008, 1);
+
+  -- Lock affected case rows before changing their strategies.
   perform 1
   from public.cases as c
   order by c.id

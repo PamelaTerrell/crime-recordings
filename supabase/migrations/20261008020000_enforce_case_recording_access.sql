@@ -29,12 +29,14 @@ declare
   case_strategy text;
   selected_recording_id uuid;
 begin
+  -- Serialize recording-access changes with showcase switching.
+  perform pg_catalog.pg_advisory_xact_lock(20261008, 1);
+
   select c.recording_access_strategy,
          c.free_featured_recording_id
   into case_strategy, selected_recording_id
   from public.cases c
-  where c.id = new.case_id
-  for update;
+  where c.id = new.case_id;
 
   if not found then
     raise exception 'Recording case does not exist.';
