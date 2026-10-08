@@ -143,8 +143,6 @@ export default function AudioUploadForm({
   const [thumbnailUrl, setThumbnailUrl] = useState("");
   const [durationSeconds, setDurationSeconds] =
     useState("");
-  const [accessLevel, setAccessLevel] =
-    useState<"public" | "member">("member");
   const [isPublished, setIsPublished] = useState(false);
   const [mediaFile, setMediaFile] = useState<File | null>(
     null,
@@ -312,7 +310,6 @@ export default function AudioUploadForm({
           fileSummary: fileSummary.trim(),
           thumbnailUrl: thumbnailUrl.trim(),
           durationSeconds: parsedDurationSeconds,
-          accessLevel,
           isPublished,
           objectKey: uploadUrlData.objectKey,
           originalFilename: mediaFile.name,
@@ -418,27 +415,15 @@ export default function AudioUploadForm({
             </select>
           </label>
 
-          <label className="grid gap-2">
+          <div className="grid gap-2">
             <span className="text-xs font-extrabold uppercase tracking-[0.13em] text-[#d8d9dc]">
-              Access
+              Recording access
             </span>
-
-            <select
-              value={accessLevel}
-              onChange={(event) =>
-                setAccessLevel(
-                  event.target.value as
-                    | "public"
-                    | "member",
-                )
-              }
-              disabled={pending}
-              className="min-h-14 w-full border border-white/10 bg-[#080b0f] px-4 text-[#f4f1e9] outline-none transition focus:border-[#c8a66a] focus:ring-4 focus:ring-[#c8a66a]/10"
-            >
-              <option value="member">Members only</option>
-              <option value="public">Public</option>
-            </select>
-          </label>
+            <p className="m-0 border border-white/10 bg-[#080b0f] px-4 py-3 text-sm leading-6 text-[#b9bdc5]">
+              Free playback is managed by the Case Access Strategy
+              setting on the case administration page.
+            </p>
+          </div>
 
           <label className="grid gap-2 md:col-span-2">
             <span className="text-xs font-extrabold uppercase tracking-[0.13em] text-[#d8d9dc]">

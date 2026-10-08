@@ -3,8 +3,6 @@ import { NextResponse } from "next/server";
 import { r2BucketName, r2Client } from "@/lib/r2";
 import { createClient } from "@/lib/supabase/server";
 
-const allowedAccessLevels = new Set(["public", "member"]);
-
 async function requireEditorialAccess() {
   const supabase = await createClient();
 
@@ -88,11 +86,6 @@ export async function PATCH(
         ? body.recordingType.trim()
         : "";
 
-    const accessLevel =
-      typeof body.accessLevel === "string"
-        ? body.accessLevel.trim()
-        : "";
-
     const isPublished = body.isPublished === true;
     const isFeatured = body.isFeatured === true;
     const hasIsPublicTeaser =
@@ -162,13 +155,6 @@ export async function PATCH(
     if (!recordingType) {
       return NextResponse.json(
         { error: "Please select a recording type." },
-        { status: 400 },
-      );
-    }
-
-    if (!allowedAccessLevels.has(accessLevel)) {
-      return NextResponse.json(
-        { error: "Please select a valid access level." },
         { status: 400 },
       );
     }
@@ -312,6 +298,30 @@ export async function PATCH(
       }
     }
 
+    const { data: accessCase, error: accessCaseError } =
+      await supabase
+        .from("cases")
+        .select(
+          "recording_access_strategy, free_featured_recording_id",
+        )
+        .eq("id", currentRecording.case_id)
+        .single();
+
+    if (accessCaseError || !accessCase) {
+      return NextResponse.json(
+        { error: "Unable to verify case access strategy." },
+        { status: 500 },
+      );
+    }
+
+    const effectiveAccessLevel =
+      accessCase.recording_access_strategy === "fully_free"
+        ? (isPublished ? "public" : "member")
+        : accessCase.recording_access_strategy === "free_sample" &&
+            accessCase.free_featured_recording_id === id
+          ? "public"
+          : "member";
+
     const { error: updateError } = await supabase
       .from("recordings")
       .update({
@@ -328,7 +338,7 @@ export async function PATCH(
           ? durationSeconds
           : currentRecording.duration_seconds,
 
-        access_level: accessLevel,
+        access_level: effectiveAccessLevel,
         is_published: isPublished,
         is_featured: isFeatured,
         is_public_teaser: isPublicTeaser,

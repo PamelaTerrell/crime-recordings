@@ -106,6 +106,60 @@ revoke execute
 on function public.protect_free_featured_recording()
 from public, anon, authenticated;
 
+-- Abort initialization if the previously verified public access
+-- configuration has changed since the migration was prepared.
+do $check$
+begin
+  if (
+    select count(*)
+    from public.recordings
+    where case_id = '0271c02f-04e6-4fc9-a305-990cd0887bf1'
+      and is_published = true
+  ) <> 22
+  or (
+    select count(*)
+    from public.recordings
+    where case_id = '0271c02f-04e6-4fc9-a305-990cd0887bf1'
+      and is_published = true
+      and access_level = 'public'
+  ) <> 22
+  or (
+    select count(*)
+    from public.recordings
+    where case_id = '62a27553-a0c2-46c7-a55d-04beb6b243e8'
+      and is_published = true
+      and access_level = 'public'
+  ) <> 1
+  or exists (
+    select 1
+    from public.recordings
+    where is_published = true
+      and access_level = 'public'
+      and case_id not in (
+        '0271c02f-04e6-4fc9-a305-990cd0887bf1',
+        '62a27553-a0c2-46c7-a55d-04beb6b243e8'
+      )
+  ) then
+    raise exception
+      'Recording access has changed. Review existing public recordings before applying this migration.';
+  end if;
+end;
+$check$;
+
+-- Initialize existing case strategies without changing recording permissions.
+-- These IDs were verified against the existing published archive.
+
+update public.cases
+set recording_access_strategy = 'fully_free'
+where id = '0271c02f-04e6-4fc9-a305-990cd0887bf1';
+
+update public.cases
+set
+  recording_access_strategy = 'free_sample',
+  free_featured_recording_id =
+    'b95f41aa-9454-405c-a588-55933d9470a0'
+where id = '62a27553-a0c2-46c7-a55d-04beb6b243e8';
+
 comment on column public.cases.free_featured_recording_id is
 'Selected free featured recording for the public case page.';
 

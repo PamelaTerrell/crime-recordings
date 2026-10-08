@@ -207,9 +207,6 @@ export default function RecordingPlayer({
         ? ""
         : String(durationSeconds),
     );
-  const [editedAccess, setEditedAccess] = useState<
-    "public" | "member"
-  >(accessLevel === "public" ? "public" : "member");
   const [editedPublished, setEditedPublished] =
     useState(isPublished);
   const [editedFeatured, setEditedFeatured] =
@@ -454,7 +451,6 @@ export default function RecordingPlayer({
                     savedThumbnailObjectKey,
                 }
               : {}),
-            accessLevel: editedAccess,
             isPublished: editedPublished,
             isFeatured: editedFeatured,
             isPublicTeaser: editedPublicTeaser,
@@ -729,30 +725,16 @@ export default function RecordingPlayer({
               </select>
             </label>
 
-            <label className="grid gap-2">
+            <div className="grid gap-2">
               <span className="text-xs font-extrabold uppercase tracking-[0.12em] text-[#d8d9dc]">
-                Access
+                Recording access
               </span>
 
-              <select
-                value={editedAccess}
-                onChange={(event) =>
-                  setEditedAccess(
-                    event.target.value as
-                      | "public"
-                      | "member",
-                  )
-                }
-                disabled={pendingAction !== null}
-                className="min-h-13 border border-white/10 bg-[#080b0f] px-4 text-[#f4f1e9] outline-none focus:border-[#c8a66a]"
-              >
-                <option value="member">
-                  Members only
-                </option>
-
-                <option value="public">Public</option>
-              </select>
-            </label>
+              <p className="m-0 rounded-xl border border-white/10 bg-[#080b0f] px-4 py-3 text-sm leading-6 text-[#b9bdc5]">
+                Free playback is managed through the Case Access
+                Strategy panel above the recording list.
+              </p>
+            </div>
 
             <label className="grid gap-2 md:col-span-2">
               <span className="text-xs font-extrabold uppercase tracking-[0.12em] text-[#d8d9dc]">
