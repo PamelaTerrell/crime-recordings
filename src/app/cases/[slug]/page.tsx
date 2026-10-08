@@ -327,6 +327,11 @@ export default async function PublicCasePage({
     isAuthenticated,
   } = result;
 
+  const publicRecordings = recordings.filter(
+    (recording) =>
+      recording.access_level === "public",
+  );
+
   const memberRecordings = recordings.filter(
     (recording) =>
       recording.access_level === "member",
@@ -421,10 +426,13 @@ export default async function PublicCasePage({
           {memberRecordings.length > 0 ? (
             <div className="mt-5 max-w-4xl border-l border-[#c8a66a] pl-5">
               <p className="text-base leading-7 text-[#b8bcc2]">
-                The first recording in this case is
-                available publicly. Additional recordings
-                are available with a Crime Recordings
-                membership.
+                {publicRecordings.length > 0
+                  ? `${publicRecordings.length} ${
+                      publicRecordings.length === 1
+                        ? "recording is"
+                        : "recordings are"
+                    } available publicly. Additional recordings require a Crime Recordings membership.`
+                  : "The recordings in this case require a Crime Recordings membership."}
               </p>
 
               <div className="mt-4 flex flex-wrap gap-4 text-xs font-extrabold uppercase tracking-[0.1em]">
