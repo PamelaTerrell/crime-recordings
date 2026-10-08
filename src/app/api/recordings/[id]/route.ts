@@ -439,6 +439,18 @@ export async function DELETE(
       .eq("id", id);
 
     if (deleteError) {
+      if (deleteError.code === "23503") {
+        return NextResponse.json(
+          {
+            error:
+              "This recording is referenced by the case access settings. " +
+              "Choose a different free featured recording or clear the " +
+              "selection before deleting it.",
+          },
+          { status: 409 },
+        );
+      }
+
       return NextResponse.json(
         { error: deleteError.message },
         { status: 500 },
