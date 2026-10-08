@@ -363,6 +363,7 @@ export default async function AdminCasePage({
         </div>
 
         <CaseAccessStrategy
+          caseId={caseItem.id}
           strategy={caseItem.recording_access_strategy}
           freeRecordingId={caseItem.free_featured_recording_id}
           recordings={recordings ?? []}
