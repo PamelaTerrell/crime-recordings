@@ -82,13 +82,14 @@ begin
         and access_level is distinct from 'member';
 
       if saved_recording_id is not null then
-        update public.recordings
-        set access_level = 'public'
-        where id = saved_recording_id;
-
+        -- Activate the saved sample before synchronizing its access.
         update public.cases
         set recording_access_strategy = 'free_sample'
         where id = previous_showcase.id;
+
+        update public.recordings
+        set access_level = 'public'
+        where id = saved_recording_id;
       end if;
     end loop;
   end if;
@@ -104,24 +105,28 @@ begin
     and access_level is distinct from 'member';
 
   if p_strategy = 'fully_free' then
+    -- Set the strategy first so the recording trigger
+    -- sees the intended final access policy.
+    update public.cases
+    set recording_access_strategy = 'fully_free'
+    where id = p_case_id;
+
     update public.recordings
     set access_level = 'public'
     where case_id = p_case_id
       and is_published = true;
 
-    update public.cases
-    set recording_access_strategy = 'fully_free'
-    where id = p_case_id;
-
   elsif p_strategy = 'free_sample' then
-    update public.recordings
-    set access_level = 'public'
-    where id = p_free_recording_id;
-
+    -- Set the selected recording and strategy together.
+    -- The recording trigger will then enforce public access.
     update public.cases
     set recording_access_strategy = 'free_sample',
         free_featured_recording_id = p_free_recording_id
     where id = p_case_id;
+
+    update public.recordings
+    set access_level = 'public'
+    where id = p_free_recording_id;
   end if;
 end;
 $function$;

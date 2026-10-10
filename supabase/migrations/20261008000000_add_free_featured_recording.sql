@@ -47,10 +47,9 @@ begin
     where public.recordings.id = new.free_featured_recording_id
       and public.recordings.case_id = new.id
       and public.recordings.is_published = true
-      and public.recordings.access_level = 'public'
   ) then
     raise exception
-      'The free featured recording must belong to this case, be published, and have public access.'
+      'The free featured recording must belong to this case and be published.'
       using errcode = '23514';
   end if;
 

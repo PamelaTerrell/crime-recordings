@@ -68,4 +68,35 @@ revoke execute
 on function public.enforce_case_recording_access()
 from public, anon, authenticated;
 
+-- Restrict direct access-strategy edits by authenticated users.
+-- Ordinary case updates remain subject to existing RLS policies.
+revoke update on public.cases from anon;
+revoke update on public.cases from authenticated;
+
+grant update (
+  slug,
+  title,
+  subtitle,
+  summary,
+  description,
+  location_city,
+  location_state,
+  location_country,
+  incident_date,
+  resolution_date,
+  case_status,
+  featured_image_url,
+  content_warning,
+  is_featured,
+  scheduled_for,
+  published_at,
+  updated_by,
+  updated_at,
+  victim_names,
+  accused_names,
+  search_keywords
+)
+on public.cases
+to authenticated;
+
 commit;
