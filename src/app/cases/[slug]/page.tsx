@@ -59,7 +59,7 @@ async function getPublishedCase(slug: string) {
 
   const { data: recordings, error: recordingsError } =
     await supabase
-      .from("recordings")
+      .from("public_recording_catalog")
       .select(
         `
           id,
@@ -67,16 +67,13 @@ async function getPublishedCase(slug: string) {
           recording_type,
           file_summary,
           duration_seconds,
-          thumbnail_object_key,
           mime_type,
           access_level,
-          is_featured,
           sort_order,
           created_at
         `,
       )
       .eq("case_id", caseItem.id)
-      .eq("is_published", true)
       .order("sort_order", {
         ascending: true,
       })
@@ -90,47 +87,60 @@ async function getPublishedCase(slug: string) {
     );
   }
 
+  const publicRecordingIds = (recordings ?? [])
+    .filter((recording) => recording.access_level === "public")
+    .map((recording) => recording.id);
+
+  const { data: publicThumbnailRecords, error: thumbnailError } =
+    publicRecordingIds.length > 0
+      ? await supabase
+          .from("recordings")
+          .select("id, thumbnail_object_key")
+          .in("id", publicRecordingIds)
+          .eq("access_level", "public")
+          .eq("is_published", true)
+      : { data: [], error: null };
+
+  if (thumbnailError) {
+    console.error("Unable to load public recording thumbnails:", thumbnailError);
+  }
+
+  const publicThumbnailKeys = new Map(
+    (publicThumbnailRecords ?? []).map((recording) => [
+      recording.id,
+      recording.thumbnail_object_key,
+    ]),
+  );
+
   const recordingsWithThumbnails = await Promise.all(
     (recordings ?? []).map(async (recording) => {
-      if (
-        recording.access_level !== "public" ||
-        !recording.thumbnail_object_key
-      ) {
-        return {
-          ...recording,
-          thumbnail_url: null,
-        };
+      const thumbnailKey =
+        recording.access_level === "public"
+          ? publicThumbnailKeys.get(recording.id)
+          : null;
+
+      if (!thumbnailKey) {
+        return { ...recording, thumbnail_url: null as string | null };
       }
 
       try {
-        const command = new GetObjectCommand({
-          Bucket: r2BucketName,
-          Key: recording.thumbnail_object_key,
-          ResponseContentDisposition: "inline",
-        });
-
         const thumbnailUrl = await getSignedUrl(
           r2Client,
-          command,
-          {
-            expiresIn: 60 * 60,
-          },
+          new GetObjectCommand({
+            Bucket: r2BucketName,
+            Key: thumbnailKey,
+            ResponseContentDisposition: "inline",
+          }),
+          { expiresIn: 60 * 60 },
         );
 
-        return {
-          ...recording,
-          thumbnail_url: thumbnailUrl,
-        };
-      } catch (thumbnailError) {
+        return { ...recording, thumbnail_url: thumbnailUrl };
+      } catch (error) {
         console.error(
           `Unable to prepare thumbnail for recording ${recording.id}:`,
-          thumbnailError,
+          error,
         );
-
-        return {
-          ...recording,
-          thumbnail_url: null,
-        };
+        return { ...recording, thumbnail_url: null as string | null };
       }
     }),
   );
@@ -550,6 +560,7 @@ export default async function PublicCasePage({
                               accessLevel={
                                 recording.access_level
                               }
+                              isAuthenticated={isAuthenticated}
                             />
                           </div>
                         </div>
