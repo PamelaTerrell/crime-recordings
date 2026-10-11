@@ -374,7 +374,13 @@ function SecureGalleryImage({
       return;
     }
 
-    void requestImage();
+    const frameId = window.requestAnimationFrame(() => {
+      void requestImage();
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+    };
   }, [
     shouldLoad,
     requestImage,

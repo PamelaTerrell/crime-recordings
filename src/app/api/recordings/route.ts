@@ -3,8 +3,6 @@ import { NextResponse } from "next/server";
 import { r2BucketName, r2Client } from "@/lib/r2";
 import { createClient } from "@/lib/supabase/server";
 
-const allowedAccessLevels = new Set(["public", "member"]);
-
 function createSlug(value: string) {
   return value
     .toLowerCase()
@@ -102,11 +100,6 @@ export async function POST(request: Request) {
         ? body.durationSeconds
         : null;
 
-    const accessLevel =
-      typeof body.accessLevel === "string"
-        ? body.accessLevel.trim()
-        : "";
-
     const objectKey =
       typeof body.objectKey === "string"
         ? body.objectKey.trim()
@@ -146,13 +139,6 @@ export async function POST(request: Request) {
     if (!recordingType) {
       return NextResponse.json(
         { error: "Please select a recording type." },
-        { status: 400 },
-      );
-    }
-
-    if (!allowedAccessLevels.has(accessLevel)) {
-      return NextResponse.json(
-        { error: "Please select a valid access level." },
         { status: 400 },
       );
     }
@@ -241,6 +227,28 @@ export async function POST(request: Request) {
       ? `${baseSlug}-${crypto.randomUUID().slice(0, 8)}`
       : baseSlug;
 
+    const { data: accessCase, error: accessCaseError } =
+      await supabase
+        .from("cases")
+        .select("recording_access_strategy")
+        .eq("id", caseId)
+        .single();
+
+    if (accessCaseError || !accessCase) {
+      await removeUploadedObject(objectKey);
+
+      return NextResponse.json(
+        { error: "Unable to verify case access strategy." },
+        { status: 500 },
+      );
+    }
+
+    const effectiveAccessLevel =
+      accessCase.recording_access_strategy === "fully_free" &&
+      isPublished
+        ? "public"
+        : "member";
+
     const publishedAt = isPublished
       ? new Date().toISOString()
       : null;
@@ -256,7 +264,7 @@ export async function POST(request: Request) {
           file_summary: fileSummary || null,
           thumbnail_url: thumbnailUrl || null,
           duration_seconds: durationSeconds,
-          access_level: accessLevel,
+          access_level: effectiveAccessLevel,
           full_object_key: objectKey,
           original_filename: originalFilename || null,
           mime_type: mimeType || null,

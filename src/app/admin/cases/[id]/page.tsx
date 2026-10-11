@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import CaseDangerActions from "./case-danger-actions";
 import CaseImageDeleteButton from "./case-image-delete-button";
 import CaseImageTeaserControl from "./case-image-teaser-control";
+import CaseAccessStrategy from "./case-access-strategy";
 import RecordingPlayer from "./recording-player";
 
 function formatFileSize(bytes: number | null) {
@@ -52,6 +53,8 @@ export default async function AdminCasePage({
         summary,
         description,
         case_status,
+        recording_access_strategy,
+        free_featured_recording_id,
         victim_names,
         accused_names,
         location_city,
@@ -358,6 +361,13 @@ export default async function AdminCasePage({
             Add media
           </Link>
         </div>
+
+        <CaseAccessStrategy
+          caseId={caseItem.id}
+          strategy={caseItem.recording_access_strategy}
+          freeRecordingId={caseItem.free_featured_recording_id}
+          recordings={recordings ?? []}
+        />
 
         {recordings &&
         recordings.length > 0 ? (
