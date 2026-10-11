@@ -75,4 +75,17 @@ ON public.recordings
 FOR EACH STATEMENT
 EXECUTE FUNCTION private.lock_recording_write_statement();
 
+
+-- Acquire the same lock before case-image writes. A published
+-- case-image teaser can update recordings from its row trigger,
+-- so the advisory lock must be acquired before image row locks.
+DROP TRIGGER IF EXISTS case_images_coordinate_writes
+ON public.case_images;
+
+CREATE TRIGGER case_images_coordinate_writes
+BEFORE INSERT OR UPDATE OR DELETE
+ON public.case_images
+FOR EACH STATEMENT
+EXECUTE FUNCTION private.lock_recording_write_statement();
+
 commit;
