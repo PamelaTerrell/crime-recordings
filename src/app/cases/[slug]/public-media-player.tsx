@@ -8,6 +8,7 @@ type PublicMediaPlayerProps = {
   title: string;
   mimeType: string | null;
   accessLevel: string;
+  isAuthenticated?: boolean;
   featured?: boolean;
 };
 
@@ -39,6 +40,7 @@ export default function PublicMediaPlayer({
   title,
   mimeType,
   accessLevel,
+  isAuthenticated = false,
   featured = false,
 }: PublicMediaPlayerProps) {
   const [playbackUrl, setPlaybackUrl] = useState("");
@@ -133,6 +135,30 @@ export default function PublicMediaPlayer({
         >
           Your browser does not support audio playback.
         </audio>
+      </div>
+    );
+  }
+
+  if (isMemberOnly && !isAuthenticated) {
+    return (
+      <div className="border-t border-white/10 pt-5">
+        <p className="mb-4 max-w-2xl text-sm leading-6 text-[#a8adb5]">
+          This recording is available to active Crime Recordings members.
+        </p>
+        <div className="flex flex-wrap items-center gap-4">
+          <Link
+            href="/membership"
+            className="inline-flex min-h-12 items-center justify-center border border-[#c8a66a] bg-[#c8a66a] px-6 text-xs font-extrabold uppercase tracking-[0.1em] text-[#111318] transition hover:bg-[#e1c58f]"
+          >
+            Unlock recording
+          </Link>
+          <Link
+            href="/login"
+            className="text-xs font-extrabold uppercase tracking-[0.1em] text-[#a8adb5] transition hover:text-[#e1c58f]"
+          >
+            Already a member? Sign in →
+          </Link>
+        </div>
       </div>
     );
   }

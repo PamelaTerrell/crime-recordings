@@ -116,7 +116,7 @@ export async function POST(request: Request) {
     const { data: caseRecord, error: caseError } =
       await supabase
         .from("cases")
-        .select("id, case_status")
+        .select("id, case_status, published_at")
         .eq("id", recording.case_id)
         .maybeSingle();
 
@@ -130,6 +130,8 @@ export async function POST(request: Request) {
     if (
       !caseRecord ||
       caseRecord.case_status !== "published" ||
+      !caseRecord.published_at ||
+      new Date(caseRecord.published_at).getTime() > Date.now() ||
       !recording.is_published
     ) {
       return NextResponse.json(
@@ -280,10 +282,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(
       {
-        error:
-          error instanceof Error
-            ? error.message
-            : "The recording could not be prepared.",
+        error: "The recording could not be prepared.",
       },
       { status: 500 },
     );
