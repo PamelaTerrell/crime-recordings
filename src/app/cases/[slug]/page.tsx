@@ -91,59 +91,13 @@ async function getPublishedCase(slug: string) {
     .filter((recording) => recording.access_level === "public")
     .map((recording) => recording.id);
 
-  const { data: publicThumbnailRecords, error: thumbnailError } =
-    publicRecordingIds.length > 0
-      ? await supabase
-          .from("recordings")
-          .select("id, thumbnail_object_key")
-          .in("id", publicRecordingIds)
-          .eq("access_level", "public")
-          .eq("is_published", true)
-      : { data: [], error: null };
-
-  if (thumbnailError) {
-    console.error("Unable to load public recording thumbnails:", thumbnailError);
-  }
-
-  const publicThumbnailKeys = new Map(
-    (publicThumbnailRecords ?? []).map((recording) => [
-      recording.id,
-      recording.thumbnail_object_key,
-    ]),
-  );
-
-  const recordingsWithThumbnails = await Promise.all(
-    (recordings ?? []).map(async (recording) => {
-      const thumbnailKey =
-        recording.access_level === "public"
-          ? publicThumbnailKeys.get(recording.id)
-          : null;
-
-      if (!thumbnailKey) {
-        return { ...recording, thumbnail_url: null as string | null };
-      }
-
-      try {
-        const thumbnailUrl = await getSignedUrl(
-          r2Client,
-          new GetObjectCommand({
-            Bucket: r2BucketName,
-            Key: thumbnailKey,
-            ResponseContentDisposition: "inline",
-          }),
-          { expiresIn: 60 * 60 },
-        );
-
-        return { ...recording, thumbnail_url: thumbnailUrl };
-      } catch (error) {
-        console.error(
-          `Unable to prepare thumbnail for recording ${recording.id}:`,
-          error,
-        );
-        return { ...recording, thumbnail_url: null as string | null };
-      }
-    }),
-  );
+  // The public catalog already limits this list to published recordings
+  // belonging to published cases. The thumbnail endpoint independently
+  // checks publication status before returning a signed preview URL.
+  const recordingsWithThumbnails = (recordings ?? []).map((recording) => ({
+    ...recording,
+    thumbnail_url: `/api/public/recordings/${recording.id}/thumbnail`,
+  }));
 
   const {
     data: documents,
