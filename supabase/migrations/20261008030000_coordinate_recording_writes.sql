@@ -43,8 +43,6 @@ on function private.effective_recording_access(
 )
 from public, anon, authenticated;
 
-commit;
-
 -- Coordinate recording writes with showcase strategy changes.
 -- The matching advisory lock is acquired by
 -- public.set_case_recording_access_strategy.
@@ -76,3 +74,5 @@ BEFORE INSERT OR UPDATE OR DELETE
 ON public.recordings
 FOR EACH STATEMENT
 EXECUTE FUNCTION private.lock_recording_write_statement();
+
+commit;
