@@ -344,7 +344,7 @@ export async function POST() {
           {
             mode: "subscription",
             line_items: [{ price: stripePriceId, quantity: 1 }],
-            success_url: `${siteUrl}/account?checkout=success`,
+            success_url: `${siteUrl}/membership/success?session_id={CHECKOUT_SESSION_ID}`,
             cancel_url: `${siteUrl}/membership?checkout=canceled`,
             customer: canonicalCustomerId ?? undefined,
             customer_email: canonicalCustomerId
