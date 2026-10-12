@@ -17,7 +17,7 @@ export default async function LoginPage({
 }) {
   const { next } = await searchParams;
   const destination =
-    next === "/membership" ? "/membership" : "/account";
+    next === "/membership" ? "/membership" : "/cases";
   const supabase = await createClient();
 
   const {

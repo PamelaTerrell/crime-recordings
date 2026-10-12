@@ -39,7 +39,7 @@ export async function requestMagicLink(
   const next =
     requestedNext === "/membership"
       ? "/membership"
-      : "/account";
+      : "/cases";
 
   const requestHeaders = await headers();
   const origin =

@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 
 function getSafeDestination(value: string | null) {
   if (!value || !value.startsWith("/") || value.startsWith("//")) {
-    return "/account";
+    return "/cases";
   }
 
   return value;

@@ -215,6 +215,12 @@ export default async function CasesArchivePage({
   const supabase =
     await createClient();
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const isSignedIn = Boolean(user);
+
   /*
    * PUBLISHED CASES
    */
@@ -576,12 +582,26 @@ export default async function CasesArchivePage({
             Cases
           </Link>
 
-          <Link
-            href="/login"
-            className="transition hover:text-[#e1c58f]"
-          >
-            Sign in
-          </Link>
+          {isSignedIn ? (
+            <>
+              <span className="hidden text-[#8fc6a3] sm:inline">
+                Signed in
+              </span>
+              <Link
+                href="/account"
+                className="transition hover:text-[#e1c58f]"
+              >
+                My Account
+              </Link>
+            </>
+          ) : (
+            <Link
+              href="/login"
+              className="transition hover:text-[#e1c58f]"
+            >
+              Sign in
+            </Link>
+          )}
         </nav>
       </header>
 
@@ -1150,10 +1170,10 @@ export default async function CasesArchivePage({
             </Link>
 
             <Link
-              href="/login"
+              href={isSignedIn ? "/account" : "/login"}
               className="inline-flex min-h-14 items-center justify-center border border-white/15 px-7 text-xs font-extrabold uppercase tracking-[0.1em] text-[#d8d9dc] transition hover:border-white/30"
             >
-              Sign in
+              {isSignedIn ? "My Account" : "Sign in"}
             </Link>
           </div>
         </div>
