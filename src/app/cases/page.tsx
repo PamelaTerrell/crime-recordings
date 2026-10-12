@@ -221,6 +221,47 @@ export default async function CasesArchivePage({
 
   const isSignedIn = Boolean(user);
 
+  let hasActiveMembership = false;
+
+  if (user) {
+    const { data: subscriptions, error: subscriptionError } =
+      await supabase
+        .from("subscriptions")
+        .select("status,current_period_end")
+        .eq("user_id", user.id);
+
+    if (subscriptionError) {
+      console.error(
+        "Unable to check archive membership:",
+        subscriptionError.message,
+      );
+    } else {
+      hasActiveMembership = (subscriptions ?? []).some(
+        (subscription) => {
+          if (
+            subscription.status !== "active" &&
+            subscription.status !== "trialing"
+          ) {
+            return false;
+          }
+
+          if (!subscription.current_period_end) {
+            return true;
+          }
+
+          const periodEnd = new Date(
+            subscription.current_period_end,
+          );
+
+          return (
+            !Number.isNaN(periodEnd.getTime()) &&
+            periodEnd.getTime() > Date.now()
+          );
+        },
+      );
+    }
+  }
+
   /*
    * PUBLISHED CASES
    */
@@ -1150,23 +1191,22 @@ export default async function CasesArchivePage({
             </h2>
 
             <p className="mt-5 max-w-3xl leading-8 text-[#a8adb5]">
-              Published case facts
-              are available
-              publicly. Some
-              complete recordings,
-              images, and extended
-              case materials may
-              require an active
-              membership.
+              {hasActiveMembership
+                ? "Member Access Active — Your subscription includes access to members-only recordings throughout the archive. Thank you for supporting Crime Recordings."
+                : "Published case facts are available publicly. Unlock complete recordings, interviews, and extended case materials with a Crime Recordings membership."}
             </p>
           </div>
 
           <div className="flex flex-wrap gap-3">
             <Link
-              href="/membership"
+              href={hasActiveMembership ? "/account" : "/membership"}
               className="inline-flex min-h-14 items-center justify-center border border-[#c8a66a] bg-[#c8a66a] px-7 text-xs font-extrabold uppercase tracking-[0.1em] text-[#111318] transition hover:bg-[#e1c58f]"
             >
-              View membership
+              {hasActiveMembership
+                ? "Membership Active · My Account"
+                : isSignedIn
+                  ? "Become a Member"
+                  : "View Membership"}
             </Link>
 
             <Link
