@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/server";
+import { signOut } from "@/app/login/actions";
 import CheckoutButton from "./checkout-button";
 
 export const metadata: Metadata = {
@@ -19,7 +21,15 @@ const MEMBERSHIP_FEATURES = [
   "Secure streaming from the Crime Recordings archive",
 ];
 
-export default function MembershipPage() {
+export default async function MembershipPage() {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const isSignedIn = Boolean(user);
+
   return (
     <main className="min-h-screen bg-[#080b0f] text-[#f4f1e9]">
       <header className="flex min-h-24 items-center justify-between gap-6 border-b border-white/10 px-5 py-5 md:px-10 lg:px-16">
@@ -38,12 +48,36 @@ export default function MembershipPage() {
             Cases
           </Link>
 
-          <Link
-            href="/login"
-            className="transition hover:text-[#e1c58f]"
-          >
-            Sign in
-          </Link>
+          {isSignedIn ? (
+            <>
+              <span className="hidden text-[#8fc6a3] sm:inline">
+                Signed in
+              </span>
+
+              <Link
+                href="/account"
+                className="transition hover:text-[#e1c58f]"
+              >
+                My Account
+              </Link>
+
+              <form action={signOut}>
+                <button
+                  type="submit"
+                  className="cursor-pointer text-[#a8adb5] transition hover:text-[#e1c58f]"
+                >
+                  Sign out
+                </button>
+              </form>
+            </>
+          ) : (
+            <Link
+              href="/login?next=/membership"
+              className="transition hover:text-[#e1c58f]"
+            >
+              Sign in
+            </Link>
+          )}
         </nav>
       </header>
 
