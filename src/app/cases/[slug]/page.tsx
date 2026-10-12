@@ -328,12 +328,26 @@ export default async function PublicCasePage({
             Cases
           </Link>
 
-          <Link
-            href="/login"
-            className="transition hover:text-[#e1c58f]"
-          >
-            Sign in
-          </Link>
+          {isAuthenticated ? (
+            <>
+              <span className="hidden text-[#8fc6a3] sm:inline">
+                Signed in
+              </span>
+              <Link
+                href="/account"
+                className="transition hover:text-[#e1c58f]"
+              >
+                My Account
+              </Link>
+            </>
+          ) : (
+            <Link
+              href="/login"
+              className="transition hover:text-[#e1c58f]"
+            >
+              Sign in
+            </Link>
+          )}
         </nav>
       </header>
 
@@ -408,10 +422,10 @@ export default async function PublicCasePage({
                 </Link>
 
                 <Link
-                  href="/login"
+                  href={isAuthenticated ? "/account" : "/login"}
                   className="text-[#a8adb5] transition hover:text-[#f4f1e9]"
                 >
-                  Member sign in →
+                  {isAuthenticated ? "My Account →" : "Member sign in →"}
                 </Link>
               </div>
             </div>
