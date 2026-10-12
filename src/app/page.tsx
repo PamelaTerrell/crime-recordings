@@ -152,6 +152,14 @@ function formatDate(value: string | null) {
 }
 
 export default async function Home() {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const isSignedIn = Boolean(user);
+
   const featuredResult = await getHomepageFeaturedVideo();
 
   const featuredRecording =
@@ -197,9 +205,20 @@ export default async function Home() {
             Join for $2.99
           </Link>
 
-          <Link href="/account">
-            My Account
-          </Link>
+          {isSignedIn ? (
+            <>
+              <span className="text-[#8fc6a3]">
+                Signed in
+              </span>
+              <Link href="/account">
+                My Account
+              </Link>
+            </>
+          ) : (
+            <Link href="/login">
+              Sign in
+            </Link>
+          )}
         </nav>
       </header>
 
@@ -641,8 +660,8 @@ export default async function Home() {
               Membership
             </Link>
 
-            <Link href="/account">
-              My Account
+            <Link href={isSignedIn ? "/account" : "/login"}>
+              {isSignedIn ? "My Account" : "Sign in"}
             </Link>
 
             <Link href="/privacy">
