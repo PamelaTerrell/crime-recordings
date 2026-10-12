@@ -10,7 +10,14 @@ export const metadata = {
     "Sign in securely to your Crime Recordings member account.",
 };
 
-export default async function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string }>;
+}) {
+  const { next } = await searchParams;
+  const destination =
+    next === "/membership" ? "/membership" : "/account";
   const supabase = await createClient();
 
   const {
@@ -18,7 +25,7 @@ export default async function LoginPage() {
   } = await supabase.auth.getUser();
 
   if (user) {
-    redirect("/account");
+    redirect(destination);
   }
 
   return (

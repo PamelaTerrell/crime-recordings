@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   requestMagicLink,
   type LoginState,
@@ -9,6 +10,9 @@ import {
 const INITIAL_STATE: LoginState = {};
 
 export default function LoginForm() {
+  const searchParams = useSearchParams();
+  const next = searchParams.get("next") ?? "";
+
   const [state, formAction, pending] = useActionState(
     requestMagicLink,
     INITIAL_STATE,
@@ -16,6 +20,7 @@ export default function LoginForm() {
 
   return (
     <form action={formAction} className="login-form">
+      <input type="hidden" name="next" value={next} />
       <div className="form-field">
         <label htmlFor="email">Email address</label>
 

@@ -31,6 +31,16 @@ export async function requestMagicLink(
     };
   }
 
+  const nextValue = formData.get("next");
+  const requestedNext =
+    typeof nextValue === "string" ? nextValue : "";
+
+  // Only allow the membership continuation destination.
+  const next =
+    requestedNext === "/membership"
+      ? "/membership"
+      : "/account";
+
   const requestHeaders = await headers();
   const origin =
     requestHeaders.get("origin") ??
@@ -42,7 +52,7 @@ export async function requestMagicLink(
   const { error } = await supabase.auth.signInWithOtp({
     email,
     options: {
-      emailRedirectTo: `${origin}/auth/callback`,
+      emailRedirectTo: `${origin}/auth/callback?next=${encodeURIComponent(next)}`,
       shouldCreateUser: true,
     },
   });
