@@ -3,6 +3,7 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { NextResponse } from "next/server";
 import { r2BucketName, r2Client } from "@/lib/r2";
 import { createClient } from "@/lib/supabase/server";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 
 const MEMBER_ACCESS_STATUSES = new Set([
   "trialing",
@@ -81,8 +82,11 @@ export async function POST(request: Request) {
 
     const supabase = await createClient();
 
+    // Look up recording metadata server-side so RLS does not
+    // mistake a protected recording for a missing recording.
+    // Playback authorization still uses the visitor's session.
     const { data: recording, error: recordingError } =
-      await supabase
+      await supabaseAdmin
         .from("recordings")
         .select(
           `
@@ -114,7 +118,7 @@ export async function POST(request: Request) {
     }
 
     const { data: caseRecord, error: caseError } =
-      await supabase
+      await supabaseAdmin
         .from("cases")
         .select("id, case_status, published_at")
         .eq("id", recording.case_id)
