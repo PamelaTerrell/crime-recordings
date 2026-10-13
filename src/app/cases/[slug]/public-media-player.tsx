@@ -191,7 +191,7 @@ export default function PublicMediaPlayer({
               : "Play video"}
           </button>
 
-          {error ? (
+          {requiresMembership ? (<div className="mt-5 border border-[#c8a66a]/50 bg-[#10151b] p-5"><h3 className="font-serif text-2xl text-[#e1c58f]">Unlock this recording</h3><p className="mt-3 text-sm leading-7 text-[#b8bcc2]">Join Crime Recordings for $2.99 per month to enjoy this recording and more members-only content.</p></div>) : error ? (
             <p
               role="alert"
               className="mt-5 border border-red-400/50 bg-red-400/10 px-4 py-3 text-sm leading-6 text-red-200"
@@ -214,7 +214,7 @@ export default function PublicMediaPlayer({
               href="/membership"
               className="mt-5 inline-flex min-h-12 items-center justify-center border border-[#c8a66a] bg-[#c8a66a] px-6 text-xs font-extrabold uppercase tracking-[0.1em] text-[#111318] transition hover:bg-[#e1c58f]"
             >
-              Become a member
+              Unlock Recording - $2.99/month
             </Link>
           ) : null}
         </div>
@@ -252,7 +252,7 @@ export default function PublicMediaPlayer({
         </span>
       </div>
 
-      {error ? (
+      {requiresMembership ? (<div className="mt-5 border border-[#c8a66a]/50 bg-[#10151b] p-5"><h3 className="font-serif text-2xl text-[#e1c58f]">Unlock this recording</h3><p className="mt-3 text-sm leading-7 text-[#b8bcc2]">Join Crime Recordings for $2.99 per month to enjoy this recording and more members-only content.</p></div>) : error ? (
         <p
           role="alert"
           className="mt-5 border border-red-400/50 bg-red-400/10 px-4 py-3 text-sm leading-6 text-red-200"
@@ -275,7 +275,7 @@ export default function PublicMediaPlayer({
           href="/membership"
           className="mt-5 inline-flex min-h-12 items-center justify-center border border-[#c8a66a] px-6 text-xs font-extrabold uppercase tracking-[0.1em] text-[#e1c58f] transition hover:bg-[#c8a66a]/10"
         >
-          Become a member
+          Unlock Recording - $2.99/month
         </Link>
       ) : null}
     </div>
